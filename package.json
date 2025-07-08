@@ -1,7 +1,7 @@
 {
   "name": "flags.games_server",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/app.ts"
   },
   "dependencies": {
     "hono": "^4.8.4",
