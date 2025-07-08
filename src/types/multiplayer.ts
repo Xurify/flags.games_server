@@ -1,0 +1,96 @@
+import { ServerWebSocket } from "bun";
+import { Country } from "../lib/game-logic/data/countries";
+import { Difficulty } from "../lib/constants";
+
+export interface User {
+  id: string;
+  socketId: string;
+  username: string;
+  roomId: string;
+  created: string;
+  color: string;
+  isAdmin: boolean;
+  score: number;
+  isReady: boolean;
+  currentAnswer?: string;
+  answerTime?: number;
+  lastActiveTime: string;
+}
+
+export interface GameQuestion {
+  questionNumber: number;
+  country: Country;
+  options: Country[];
+  correctAnswer: string;
+  startTime: number;
+  endTime: number;
+  timeLimit: number;
+}
+
+export interface GameAnswer {
+  userId: string;
+  username: string;
+  answer: string;
+  timeToAnswer: number;
+  isCorrect: boolean;
+  pointsAwarded: number;
+  timestamp: number;
+}
+
+export interface GameState {
+  isActive: boolean;
+  isPaused: boolean;
+  phase: 'waiting' | 'starting' | 'question' | 'results' | 'finished';
+  currentQuestion: GameQuestion | null;
+  answers: GameAnswer[];
+  currentQuestionIndex: number;
+  totalQuestions: number;
+  difficulty: Difficulty;
+  gameStartTime: number | null;
+  gameEndTime: number | null;
+  usedCountries: Set<string>;
+  questionTimer: Timer | null;
+  resultTimer: Timer | null;
+  leaderboard: Array<{
+    userId: string;
+    username: string;
+    score: number;
+    correctAnswers: number;
+    averageTime: number;
+  }>;
+}
+
+export interface Room {
+  id: string;
+  name: string;
+  host: string;
+  inviteCode: string;
+  passcode: string | null;
+  gameState: GameState;
+  members: User[];
+  previouslyConnectedMembers: Array<{ userId: string; username: string }>;
+  maxRoomSize: number;
+  created: string;
+  private: boolean;
+  settings: {
+    difficulty: Difficulty;
+    questionCount: number;
+    timePerQuestion: number;
+    //allowSpectators: boolean;
+    showLeaderboard: boolean;
+  };
+}
+
+export interface WebSocketMessage {
+  type: string;
+  data?: any;
+  timestamp?: number;
+}
+
+export interface CustomWebSocket extends ServerWebSocket<WebSocketData> {}
+
+export interface WebSocketData {
+  userId: string | null;
+  roomId: string | null;
+  isAdmin: boolean;
+}

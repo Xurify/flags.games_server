@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "strict": true,
+    "target": "es6",
+    "moduleResolution": "nodenext",
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
+    "strictNullChecks": true,
+  }
+}
