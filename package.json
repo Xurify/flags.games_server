@@ -8,6 +8,15 @@
     "nanoid": "^5.1.5"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@biomejs/biome": "2.0.6",
+    "@types/bun": "latest",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.2",
+    "ultracite": "5.0.32"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
+      "npx ultracite format"
+    ]
   }
 }
