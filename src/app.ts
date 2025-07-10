@@ -4,7 +4,7 @@ import { usersManager } from "./lib/utils/user-management";
 import { gameManager } from "./lib/utils/game-management";
 import { handleWebSocketMessage, handleWebSocketOpen, handleWebSocketClose } from "./lib/handlers/websockets";
 import { getCorsHeaders, handlePreflightRequest } from "./lib/utils/security/cors";
-import { RateLimiter } from "./lib/utils/security/rate-limiter";
+//import { RateLimiter } from "./lib/utils/security/rate-limiter";
 import { RequestValidator } from "./lib/utils/security/request-validator";
 import { ErrorHandler, AppError, ErrorCode } from "./lib/utils/error-handler";
 import { logger } from "./lib/utils/logger";
@@ -36,15 +36,15 @@ const handleApiError = (error: unknown, endpoint: string, origin: string | null 
   return ErrorHandler.createErrorResponse(appError, origin);
 };
 
-const rateLimitMiddleware = RateLimiter.createMiddleware('api');
+//const rateLimitMiddleware = RateLimiter.createMiddleware('api');
 const requestValidationMiddleware = RequestValidator.createMiddleware();
 
 const withMiddleware = (handler: (req: Request) => Promise<Response>) => {
   return ErrorHandler.asyncHandler(async (req: Request) => {
-    const rateLimitResponse = rateLimitMiddleware(req);
-    if (rateLimitResponse) {
-      return rateLimitResponse;
-    }
+    //const rateLimitResponse = rateLimitMiddleware(req);
+    // if (rateLimitResponse) {
+    //   return rateLimitResponse;
+    // }
 
     const validationResult = await requestValidationMiddleware(req);
     if (validationResult.response) {
@@ -135,7 +135,16 @@ const server = serve({
         }
       }),
     },
-
+    "/ws": {
+      async GET(req, server) {
+        console.log('WHORES');
+        const upgraded = server.upgrade(req);
+        if (!upgraded) {
+          return new Response("WebSocket upgrade failed", { status: 400 });
+        }
+        return undefined;
+      },
+    },
   },
   websocket: {
     open: (ws: ServerWebSocket<any>) => {

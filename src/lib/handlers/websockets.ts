@@ -51,9 +51,20 @@ export function handleWebSocketMessage(
   message: string | Buffer
 ) {
   try {
-    const rawData = JSON.parse(message.toString());
 
-    const securityCheck = WebSocketSecurity.validateMessage(rawData);
+    const messageString = message.toString();
+    
+    if (messageString.trim().length === 0) {
+      const error = new AppError({
+        code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
+        message: "Empty message",
+        statusCode: 400
+      });
+      ErrorHandler.handleWebSocketError(ws, error, "empty_message");
+      return;
+    }
+
+    const securityCheck = WebSocketSecurity.validateMessage(message);
     if (!securityCheck.valid) {
       const error = new AppError({
         code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
@@ -65,7 +76,7 @@ export function handleWebSocketMessage(
       return;
     }
 
-    const validation = safeValidate(WebSocketMessageSchema, rawData);
+    const validation = safeValidate(WebSocketMessageSchema, message);
 
     if (!validation.success) {
       const error = new AppError({
@@ -142,6 +153,20 @@ export function handleWebSocketClose(ws: ServerWebSocket<WebSocketData>) {
 function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: JoinRoomData) {
   const { inviteCode, username, userId } = data;
 
+  if (ws.data.userId && ws.data.roomId) {
+    const error = ErrorHandler.createRoomError("User already in a room", ErrorCode.USER_ALREADY_IN_ROOM);
+    ErrorHandler.handleWebSocketError(ws, error, "join_room");
+    return;
+  }
+
+  // Missing: Check if userId is already in use
+  if (usersManager.get(data.userId)) {
+    const error = ErrorHandler.createRoomError("User ID already in use", ErrorCode.USER_ALREADY_EXISTS);
+    ErrorHandler.handleWebSocketError(ws, error, "join_room");
+    return;
+  }
+
+
   const room = roomsManager.getRoomByInviteCode(inviteCode);
 
   if (!room) {
@@ -149,6 +174,13 @@ function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: JoinRoomData) 
     ErrorHandler.handleWebSocketError(ws, error, "join_room");
     return;
   }
+
+  if (room.members.some(member => member.username === username)) {
+    const error = ErrorHandler.createRoomError("Username already taken", ErrorCode.USERNAME_TAKEN);
+    ErrorHandler.handleWebSocketError(ws, error, "join_room");
+    return;
+  }
+
 
   if (room.members.length >= room.maxRoomSize) {
     const error = ErrorHandler.createRoomError("Room is full", ErrorCode.ROOM_FULL);
@@ -201,7 +233,7 @@ function handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: CreateRoomDa
   });
 
   const room = roomsManager.create(roomId, roomName, user, {
-    difficulty: (settings?.difficulty || DEFAULT_DIFFICULTY) as any
+    difficulty: (settings?.difficulty || DEFAULT_DIFFICULTY)
   });
 
   ws.data.userId = user.id;

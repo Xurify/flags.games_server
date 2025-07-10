@@ -1,5 +1,6 @@
 import { SECURITY_CONFIG, getClientIP } from '../../config/security';
 import { logger } from '../logger';
+import { CustomWebSocket } from '../../../types/multiplayer';
 
 interface RateLimitEntry {
   count: number;
@@ -120,6 +121,8 @@ export class RateLimiter {
   } {
     const ip = getClientIP(request);
 
+    logger.debug('Validating WebSocket connection for IP:', ip);
+
     const rateCheck = this.checkRateLimit(request, 'websocket');
     if (!rateCheck.allowed) {
       return { allowed: false, reason: rateCheck.reason };
@@ -137,16 +140,22 @@ export class RateLimiter {
     return { allowed: true };
   }
 
-  static trackWebSocketConnection(request: Request): void {
+  static trackWebSocketConnection(request: Request): string {
     const ip = getClientIP(request);
     const current = this.getConnectionCount(ip);
     this.setConnectionCount(ip, current + 1);
     
     logger.debug(`WebSocket connection tracked for IP ${ip}. Total: ${current + 1}`);
+    return ip;
   }
 
-  static untrackWebSocketConnection(request: Request): void {
-    const ip = getClientIP(request);
+  static untrackWebSocketConnection(ws: CustomWebSocket): void {
+    const ip = ws.data?.ipAddress;
+    
+    if (!ip) {
+      return;
+    }
+    
     const current = this.getConnectionCount(ip);
     
     if (current <= 1) {

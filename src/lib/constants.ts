@@ -18,7 +18,7 @@ export const VALIDATION_LIMITS = {
   ANSWER: { MIN: 1, MAX: 100 },
   INVITE_CODE_LENGTH: 6,
   QUESTION_COUNT: { MIN: 5, MAX: 50 },
-  TIME_PER_QUESTION: { MIN: 10, MAX: 120 },
+  TIME_PER_QUESTION: { MIN: 10, MAX: 60 },
 } as const;
 
 export const REGEX_PATTERNS = {
