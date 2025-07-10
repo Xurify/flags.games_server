@@ -1,4 +1,5 @@
 import { CustomWebSocket } from "../../types/multiplayer";
+import { logger } from "./logger";
 
 interface HeartbeatConfig {
   interval: number;
@@ -56,7 +57,7 @@ export class HeartbeatManager {
     this.heartbeats.set(userId, state);
     
     if (this.config.enableLogging) {
-      console.log(`Started heartbeat for user ${userId}`);
+      logger.debug(`Started heartbeat for user ${userId}`);
     }
   }
 
@@ -72,7 +73,7 @@ export class HeartbeatManager {
     this.heartbeats.delete(userId);
     
     if (this.config.enableLogging) {
-      console.log(`Stopped heartbeat for user ${userId}`);
+      logger.debug(`Stopped heartbeat for user ${userId}`);
     }
   }
 
@@ -91,7 +92,7 @@ export class HeartbeatManager {
     this.onUserActivity(userId);
 
     if (this.config.enableLogging) {
-      console.log(`Received heartbeat response from user ${userId}`);
+      logger.debug(`Received heartbeat response from user ${userId}`);
     }
   }
 
@@ -129,7 +130,7 @@ export class HeartbeatManager {
     state.missedCount++;
     
     if (this.config.enableLogging) {
-      console.log(`Heartbeat timeout for user ${userId} (missed: ${state.missedCount}/${this.config.maxMissed})`);
+      logger.warn(`Heartbeat timeout for user ${userId} (missed: ${state.missedCount}/${this.config.maxMissed})`);
     }
 
     if (state.missedCount >= this.config.maxMissed) {
@@ -139,7 +140,7 @@ export class HeartbeatManager {
 
   private handleDeadConnection(userId: string, reason: string): void {
     if (this.config.enableLogging) {
-      console.log(`Connection dead for user ${userId}: ${reason}`);
+      logger.warn(`Connection dead for user ${userId}: ${reason}`);
     }
 
     this.stopHeartbeat(userId);

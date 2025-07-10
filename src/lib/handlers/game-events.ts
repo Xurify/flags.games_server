@@ -4,6 +4,8 @@ import { gameManager } from "../utils/game-management";
 import { broadcastToRoom } from "../utils/websockets";
 import { CustomWebSocket } from "../../types/multiplayer";
 import { validateUsername } from "../utils/validation";
+import { ErrorHandler } from "../utils/error-handler";
+import { logger } from "../utils/logger";
 
 export function handleGameSpecificEvents(ws: CustomWebSocket, type: string, data: any) {
   const { userId, roomId } = ws.data;
@@ -24,7 +26,7 @@ export function handleGameSpecificEvents(ws: CustomWebSocket, type: string, data
       break;
       
     default:
-      console.warn('Unknown game event type:', type);
+      logger.warn('Unknown game event type:', type);
   }
 }
 
@@ -82,10 +84,8 @@ function handleUpdateProfile(ws: CustomWebSocket, data: any) {
   if (username) {
     const validation = validateUsername(username);
     if (!validation.valid) {
-      ws.send(JSON.stringify({
-        type: 'PROFILE_UPDATE_ERROR',
-        data: { message: validation.error }
-      }));
+      const error = ErrorHandler.createValidationError(validation.error || "Invalid username");
+      ErrorHandler.handleWebSocketError(ws, error, "profile_update");
       return;
     }
     updates.username = username;

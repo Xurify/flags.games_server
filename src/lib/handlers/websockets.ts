@@ -9,17 +9,24 @@ import {
   removeConnection,
   handleHeartbeatResponse,
 } from "../utils/websockets";
-import { validateUsername } from "../utils/validation";
+import { WebSocketData, Room } from "../../types/multiplayer";
 import {
-  WebSocketMessage,
-  WebSocketData,
-  CustomWebSocket,
-  Room,
-} from "../../types/multiplayer";
+  safeValidate,
+  WebSocketMessageSchema,
+  type CreateRoomData,
+  type JoinRoomData,
+  type SubmitAnswerData,
+  type UpdateSettingsData,
+  type KickUserData,
+} from "../schemas";
 import { nanoid } from "nanoid";
+import { DEFAULT_DIFFICULTY } from "../constants";
+import { WebSocketSecurity } from "../utils/security/network";
+import { ErrorHandler, AppError, ErrorCode } from "../utils/error-handler";
+import { logger } from "../utils/logger";
 
 export function handleWebSocketOpen(ws: ServerWebSocket<WebSocketData>) {
-  console.log("WebSocket connection opened");
+  logger.info("WebSocket connection opened");
 
   if (!ws.data) {
     ws.data = {
@@ -44,73 +51,86 @@ export function handleWebSocketMessage(
   message: string | Buffer
 ) {
   try {
-    const data: WebSocketMessage = JSON.parse(message.toString());
+    const rawData = JSON.parse(message.toString());
+
+    const securityCheck = WebSocketSecurity.validateMessage(rawData);
+    if (!securityCheck.valid) {
+      const error = new AppError({
+        code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
+        message: "Message validation failed",
+        statusCode: 400,
+        details: { reason: securityCheck.reason }
+      });
+      ErrorHandler.handleWebSocketError(ws, error, "security_validation");
+      return;
+    }
+
+    const validation = safeValidate(WebSocketMessageSchema, rawData);
+
+    if (!validation.success) {
+      const error = new AppError({
+        code: ErrorCode.VALIDATION_ERROR,
+        message: "Invalid message format",
+        statusCode: 400,
+        details: { validationError: validation.error }
+      });
+      ErrorHandler.handleWebSocketError(ws, error, "schema_validation");
+      return;
+    }
+
+    const data = validation.data;
 
     switch (data.type) {
       case "JOIN_ROOM":
         handleJoinRoom(ws, data.data);
         break;
-
       case "CREATE_ROOM":
         handleCreateRoom(ws, data.data);
         break;
-
-      case "LEAVE_ROOM":
-        handleLeaveRoom(ws);
-        break;
-
-      case "START_GAME":
-        handleStartGame(ws);
-        break;
-
       case "SUBMIT_ANSWER":
         handleSubmitAnswer(ws, data.data);
         break;
-
-      case "TOGGLE_READY":
-        handleToggleReady(ws);
-        break;
-
       case "UPDATE_SETTINGS":
         handleUpdateSettings(ws, data.data);
         break;
-
-      case "PAUSE_GAME":
-        handlePauseGame(ws);
-        break;
-
-      case "RESUME_GAME":
-        handleResumeGame(ws);
-        break;
-
-      case "STOP_GAME":
-        handleStopGame(ws);
-        break;
-
       case "KICK_USER":
         handleKickUser(ws, data.data);
         break;
-
+      case "LEAVE_ROOM":
+        handleLeaveRoom(ws);
+        break;
+      case "START_GAME":
+        handleStartGame(ws);
+        break;
+      case "TOGGLE_READY":
+        handleToggleReady(ws);
+        break;
+      case "PAUSE_GAME":
+        handlePauseGame(ws);
+        break;
+      case "RESUME_GAME":
+        handleResumeGame(ws);
+        break;
+      case "STOP_GAME":
+        handleStopGame(ws);
+        break;
       case "HEARTBEAT_RESPONSE":
         handleHeartbeatResponseMessage(ws);
         break;
-
-      default:
-        console.warn("Unknown message type:", data.type);
     }
   } catch (error) {
-    console.error("Error handling WebSocket message:", error);
-    ws.send(
-      JSON.stringify({
-        type: "ERROR",
-        data: { message: "Invalid message format" },
-      })
-    );
+    const appError = new AppError({
+      code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
+      message: "Error processing WebSocket message",
+      statusCode: 500,
+      cause: error instanceof Error ? error : new Error(String(error))
+    });
+    ErrorHandler.handleWebSocketError(ws, appError, "message_processing");
   }
 }
 
 export function handleWebSocketClose(ws: ServerWebSocket<WebSocketData>) {
-  console.log("WebSocket connection closed");
+  logger.info("WebSocket connection closed");
 
   if (ws.data?.userId && ws.data?.roomId) {
     handleLeaveRoom(ws);
@@ -119,63 +139,22 @@ export function handleWebSocketClose(ws: ServerWebSocket<WebSocketData>) {
   }
 }
 
-function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: any) {
-  if (!data || !data.username || !data.userId) {
-    ws.send(
-      JSON.stringify({
-        type: "JOIN_ROOM_ERROR",
-        data: { message: "Missing required fields" },
-      })
-    );
-    return;
-  }
+function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: JoinRoomData) {
+  const { inviteCode, username, userId } = data;
 
-  const { roomId, inviteCode, username, userId } = data;
-
-  const usernameValidation = validateUsername(username);
-  if (!usernameValidation.valid) {
-    ws.send(
-      JSON.stringify({
-        type: "JOIN_ROOM_ERROR",
-        data: { message: usernameValidation.error },
-      })
-    );
-    return;
-  }
-
-  let room = roomId
-    ? roomsManager.get(roomId)
-    : roomsManager.getRoomByInviteCode(inviteCode);
+  const room = roomsManager.getRoomByInviteCode(inviteCode);
 
   if (!room) {
-    ws.send(
-      JSON.stringify({
-        type: "JOIN_ROOM_ERROR",
-        data: { message: "Room not found" },
-      })
-    );
+    const error = ErrorHandler.createRoomError("Invalid invite code", ErrorCode.ROOM_NOT_FOUND);
+    ErrorHandler.handleWebSocketError(ws, error, "join_room");
     return;
   }
 
   if (room.members.length >= room.maxRoomSize) {
-    ws.send(
-      JSON.stringify({
-        type: "JOIN_ROOM_ERROR",
-        data: { message: "Room is full" },
-      })
-    );
+    const error = ErrorHandler.createRoomError("Room is full", ErrorCode.ROOM_FULL);
+    ErrorHandler.handleWebSocketError(ws, error, "join_room");
     return;
   }
-  // Check if game is active and settings don't allow spectators
-  // if (room.gameState.isActive && !room.settings.allowSpectators) {
-  //   ws.send(
-  //     JSON.stringify({
-  //       type: "JOIN_ROOM_ERROR",
-  //       data: { message: "Game is in progress and spectators are not allowed" },
-  //     })
-  //   );
-  //   return;
-  // }
 
   const user = usersManager.createUser({
     id: userId,
@@ -193,61 +172,24 @@ function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: any) {
   const updatedRoom = roomsManager.addUserToRoom(room.id, user);
 
   if (!updatedRoom) {
-    ws.send(
-      JSON.stringify({
-        type: "JOIN_ROOM_ERROR",
-        data: { message: "Failed to join room" },
-      })
-    );
+    const error = ErrorHandler.createRoomError("Failed to join room", ErrorCode.INTERNAL_ERROR);
+    ErrorHandler.handleWebSocketError(ws, error, "join_room");
     return;
   }
 
-  ws.send(
-    JSON.stringify({
-      type: "JOIN_ROOM_SUCCESS",
-      data: {
-        room: updatedRoom,
-        user: user,
-      },
-    })
-  );
+  ws.send(JSON.stringify({
+    type: "JOIN_ROOM_SUCCESS",
+    data: { room: updatedRoom, user },
+  }));
 
-  broadcastToRoom(
-    room.id,
-    {
-      type: "USER_JOINED",
-      data: {
-        user: user,
-        room: updatedRoom,
-      },
-    },
-    [user.id]
-  );
+  broadcastToRoom(room.id, {
+    type: "USER_JOINED",
+    data: { user, room: updatedRoom },
+  }, [user.id]);
 }
 
-function handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: any) {
-  if (!data || !data.username || !data.userId || !data.roomName) {
-    ws.send(
-      JSON.stringify({
-        type: "CREATE_ROOM_ERROR",
-        data: { message: "Missing required fields" },
-      })
-    );
-    return;
-  }
-
+function handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: CreateRoomData) {
   const { roomName, username, userId, settings } = data;
-
-  const usernameValidation = validateUsername(username);
-  if (!usernameValidation.valid) {
-    ws.send(
-      JSON.stringify({
-        type: "CREATE_ROOM_ERROR",
-        data: { message: usernameValidation.error },
-      })
-    );
-    return;
-  }
 
   const roomId = nanoid();
   const user = usersManager.createUser({
@@ -258,7 +200,9 @@ function handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: any) {
     isAdmin: true,
   });
 
-  const room = roomsManager.create(roomId, roomName, user, settings);
+  const room = roomsManager.create(roomId, roomName, user, {
+    difficulty: (settings?.difficulty || DEFAULT_DIFFICULTY) as any
+  });
 
   ws.data.userId = user.id;
   ws.data.roomId = room.id;
@@ -266,15 +210,10 @@ function handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: any) {
 
   addConnection(user.id, ws);
 
-  ws.send(
-    JSON.stringify({
-      type: "CREATE_ROOM_SUCCESS",
-      data: {
-        room: room,
-        user: user,
-      },
-    })
-  );
+  ws.send(JSON.stringify({
+    type: "CREATE_ROOM_SUCCESS",
+    data: { room, user },
+  }));
 }
 
 function handleLeaveRoom(ws: ServerWebSocket<WebSocketData>) {
@@ -303,7 +242,7 @@ function handleLeaveRoom(ws: ServerWebSocket<WebSocketData>) {
     type: "USER_LEFT",
     data: {
       userId: userId,
-      room: updatedRoom,
+      room: updatedRoom ? updatedRoom : null,
     },
   });
 
@@ -326,45 +265,38 @@ function handleStartGame(ws: ServerWebSocket<WebSocketData>) {
 
   const room = roomsManager.get(roomId);
   if (!room || room.host !== userId) {
-    ws.send(
-      JSON.stringify({
-        type: "START_GAME_ERROR",
-        data: { message: "Only the host can start the game" },
-      })
-    );
+    const error = ErrorHandler.createPermissionError("Only the host can start the game");
+    ErrorHandler.handleWebSocketError(ws, error, "start_game");
     return;
   }
 
   if (room.members.length < 2) {
-    ws.send(
-      JSON.stringify({
-        type: "START_GAME_ERROR",
-        data: { message: "Need at least 2 players to start" },
-      })
-    );
+    const error = new AppError({
+      code: ErrorCode.INVALID_GAME_STATE,
+      message: "Need at least 2 players to start",
+      statusCode: 400
+    });
+    ErrorHandler.handleWebSocketError(ws, error, "start_game");
     return;
   }
 
   const success = gameManager.startGame(roomId);
 
   if (!success) {
-    ws.send(
-      JSON.stringify({
-        type: "START_GAME_ERROR",
-        data: { message: "Failed to start game" },
-      })
-    );
+    const error = new AppError({
+      code: ErrorCode.INTERNAL_ERROR,
+      message: "Failed to start game",
+      statusCode: 500
+    });
+    ErrorHandler.handleWebSocketError(ws, error, "start_game");
   }
 }
 
-function handleSubmitAnswer(ws: ServerWebSocket<WebSocketData>, data: any) {
+function handleSubmitAnswer(ws: ServerWebSocket<WebSocketData>, data: SubmitAnswerData) {
   const { userId, roomId } = ws.data;
-  
-  if (!userId || !roomId || !data?.answer) return;
+  if (!userId || !roomId) return;
 
-  const { answer } = data;
-
-  gameManager.submitAnswer(roomId, userId, answer);
+  gameManager.submitAnswer(roomId, userId, data.answer);
 }
 
 function handleToggleReady(ws: ServerWebSocket<WebSocketData>) {
@@ -388,18 +320,15 @@ function handleToggleReady(ws: ServerWebSocket<WebSocketData>) {
   }
 }
 
-function handleUpdateSettings(ws: ServerWebSocket<WebSocketData>, data: any) {
+function handleUpdateSettings(ws: ServerWebSocket<WebSocketData>, data: UpdateSettingsData) {
   const { userId, roomId } = ws.data;
-  
-  if (!userId || !roomId || !data?.settings) return;
-
-  const { settings } = data;
+  if (!userId || !roomId) return;
 
   const room = roomsManager.get(roomId);
   if (!room || room.host !== userId) return;
 
   const updatedRoom = roomsManager.update(roomId, {
-    settings: { ...room.settings, ...settings },
+    settings: { ...room.settings, ...data.settings } as Room['settings'],
   }) as Room;
 
   broadcastToRoom(roomId, {
@@ -441,25 +370,22 @@ function handleStopGame(ws: ServerWebSocket<WebSocketData>) {
   gameManager.stopGame(roomId);
 }
 
-function handleKickUser(ws: ServerWebSocket<WebSocketData>, data: any) {
+function handleKickUser(ws: ServerWebSocket<WebSocketData>, data: KickUserData) {
   const { userId, roomId } = ws.data;
-  
-  if (!userId || !roomId || !data?.targetUserId) return;
-
-  const { targetUserId } = data;
+  if (!userId || !roomId) return;
 
   const room = roomsManager.get(roomId);
   if (!room || room.host !== userId) return;
 
-  const targetUser = usersManager.get(targetUserId);
+  const targetUser = usersManager.get(data.userId);
   if (targetUser) {
-    broadcastToUser(targetUserId, {
+    broadcastToUser(data.userId, {
       type: "KICKED",
       data: { reason: "Kicked by host" },
     });
 
-    usersManager.removeUserFromRoom(targetUserId);
-    removeConnection(targetUserId);
+    usersManager.removeUserFromRoom(data.userId);
+    removeConnection(data.userId);
   }
 }
 

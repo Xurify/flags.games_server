@@ -81,16 +81,25 @@ export interface Room {
   };
 }
 
-export interface WebSocketMessage {
+interface WebSocketMessageData {
+  [key: string]: unknown;
+}
+
+export interface WebSocketMessage<T = WebSocketMessageData> {
   type: string;
-  data?: any;
+  data: T;
   timestamp?: number;
 }
 
-export interface CustomWebSocket extends ServerWebSocket<WebSocketData> {}
+export interface CustomWebSocket extends ServerWebSocket<WebSocketData> { }
 
 export interface WebSocketData {
   userId: string | null;
   roomId: string | null;
   isAdmin: boolean;
 }
+
+type GameMessageType =
+  | { type: 'SUBMIT_ANSWER'; data: { answer: string; questionId: string } }
+  | { type: 'START_GAME'; data: {} }
+  | { type: 'JOIN_ROOM'; data: { roomId: string; username: string } };

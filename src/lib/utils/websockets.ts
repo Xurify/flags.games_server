@@ -2,6 +2,7 @@ import { roomsManager } from "./room-management";
 import { usersManager } from "./user-management";
 import { CustomWebSocket, WebSocketMessage } from "../../types/multiplayer";
 import { HeartbeatManager } from "./heartbeat-management";
+import { logger } from "./logger";
 
 const connections = new Map<string, CustomWebSocket>();
 
@@ -61,7 +62,7 @@ export function broadcastToRoom(roomId: string, message: WebSocketMessage, exclu
       try {
         ws!.send(messageString);
       } catch (error) {
-        console.error(`Error sending message to user ${member.id}:`, error);
+        logger.error(`Error sending message to user ${member.id}:`, error);
         removeConnection(member.id);
       }
     }
@@ -81,7 +82,7 @@ export function broadcastToUser(userId: string, message: WebSocketMessage) {
       timestamp: Date.now()
     }));
   } catch (error) {
-    console.error(`Error sending message to user ${userId}:`, error);
+    logger.error(`Error sending message to user ${userId}:`, error);
     removeConnection(userId);
   }
 }
@@ -97,7 +98,7 @@ export function broadcastToAll(message: WebSocketMessage) {
       try {
         ws.send(messageString);
       } catch (error) {
-        console.error(`Error broadcasting to user ${userId}:`, error);
+        logger.error(`Error broadcasting to user ${userId}:`, error);
         removeConnection(userId);
       }
     }
@@ -118,7 +119,7 @@ export function batchBroadcastToUsers(userIds: string[], message: WebSocketMessa
       try {
         ws!.send(messageString);
       } catch (error) {
-        console.error(`Error sending message to user ${userId}:`, error);
+        logger.error(`Error sending message to user ${userId}:`, error);
         failedUserIds.push(userId);
       }
     } else {
