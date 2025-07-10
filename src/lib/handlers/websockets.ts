@@ -104,7 +104,7 @@ export function handleWebSocketMessage(
         return;
       }
 
-      const { token, adminToken } = validation.data;
+      const { token } = validation.data;
       if (!token || typeof token !== 'string') {
         const error = new AppError({
           code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
@@ -120,14 +120,18 @@ export function handleWebSocketMessage(
       ws.data.authenticated = true;
 
       if (!usersManager.get(ws.data.userId)) {
+        logger.info("Creating new user during AUTH", { userId: ws.data.userId, isAdmin: ws.data.isAdmin });
         usersManager.createUser({
           id: ws.data.userId,
-          username: "", // No username at auth, can update later
+          username: "",
           roomId: "",
           socketId: nanoid(),
           isAdmin: ws.data.isAdmin,
         });
       }
+
+      addConnection(ws.data.userId, ws);
+      
       ws.send(JSON.stringify({
         type: 'AUTH_SUCCESS',
         data: { userId: ws.data.userId, isAdmin: ws.data.isAdmin },
@@ -210,16 +214,25 @@ export function handleWebSocketMessage(
 }
 
 export function handleWebSocketClose(ws: ServerWebSocket<WebSocketData>) {
-  logger.info("WebSocket connection closed");
-
-  if (ws.data?.userId) {
-    usersManager.delete(ws.data.userId);
-  }
+  logger.info("WebSocket connection closed", {
+    userId: ws.data?.userId,
+    roomId: ws.data?.roomId,
+    authenticated: ws.data?.authenticated,
+    isAdmin: ws.data?.isAdmin
+  });
 
   if (ws.data?.userId && ws.data?.roomId) {
+    logger.info("User leaving room", { userId: ws.data.userId, roomId: ws.data.roomId });
     handleLeaveRoom(ws);
   } else if (ws.data?.userId) {
+    logger.info("Removing connection for user", { userId: ws.data.userId });
     removeConnection(ws.data.userId);
+  }
+
+  if (ws.data?.userId) {
+    logger.info("Deleting user from usersManager", { userId: ws.data.userId });
+    const deleted = usersManager.delete(ws.data.userId);
+    logger.info("User deletion result", { userId: ws.data.userId, deleted });
   }
 }
 
