@@ -8,7 +8,6 @@ class RoomManager {
 
   create(
     roomId: string,
-    roomName: string,
     host: User,
     settings: {
       difficulty: Difficulty;
@@ -43,7 +42,7 @@ class RoomManager {
 
     const room: Room = {
       id: roomId,
-      name: roomName,
+      name: "",
       host: host.id,
       inviteCode: nanoid(6).toUpperCase(),
       passcode: null,

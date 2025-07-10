@@ -47,19 +47,13 @@ export class WebSocketSecurity {
 
     static validateMessage(message: any): { valid: boolean; reason?: string } {
         if (JSON.stringify(message).length > SECURITY_CONFIG.RATE_LIMITS.MESSAGE_SIZE_LIMIT) {
-            return { valid: false, reason: 'Message too large' };
+            return { valid: false, reason: 'Message too large: exceeds allowed size limit' };
         }
 
         if (!message.type || typeof message.type !== 'string') {
-            return { valid: false, reason: 'Invalid message format' };
+            return { valid: false, reason: "Missing or invalid 'type' field in message" };
         }
-
-        const stringifiedMessage = JSON.stringify(message);
-        if (InputSanitizer.containsSQLInjection(stringifiedMessage) ||
-            InputSanitizer.containsXSS(stringifiedMessage)) {
-            return { valid: false, reason: 'Suspicious content detected' };
-        }
-
+        
         return { valid: true };
     }
 

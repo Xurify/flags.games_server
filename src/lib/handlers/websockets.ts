@@ -20,30 +20,33 @@ import {
   type KickUserData,
 } from "../schemas";
 import { nanoid } from "nanoid";
-import { DEFAULT_DIFFICULTY } from "../constants";
+import { DEFAULT_DIFFICULTY } from "../constants/game-constants";
+import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
 import { WebSocketSecurity } from "../utils/security/network";
 import { ErrorHandler, AppError, ErrorCode } from "../utils/error-handler";
 import { logger } from "../utils/logger";
+import { AuthDataSchema } from "../schemas/websockets";
 
 export function handleWebSocketOpen(ws: ServerWebSocket<WebSocketData>) {
   logger.info("WebSocket connection opened");
 
-  if (!ws.data) {
-    ws.data = {
-      userId: null,
-      roomId: null,
-      isAdmin: false,
-    };
-  }
+  ws.data = {
+    //userId: nanoid(),
+    userId: null,
+    roomId: null,
+    isAdmin: false,
+    authenticated: false,
+  };
 
-  ws.send(
-    JSON.stringify({
-      type: "CONNECTION_ESTABLISHED",
-      data: {
-        timestamp: Date.now(),
-      },
-    })
-  );
+  // ws.send(
+  //   JSON.stringify({
+  //     type: WS_MESSAGE_TYPES.CONNECTION_ESTABLISHED,
+  //     data: {
+  //       userId: ws.data.userId,
+  //       timestamp: Date.now(),
+  //     },
+  //   })
+  // );
 }
 
 export function handleWebSocketMessage(
@@ -51,9 +54,8 @@ export function handleWebSocketMessage(
   message: string | Buffer
 ) {
   try {
-
     const messageString = message.toString();
-    
+
     if (messageString.trim().length === 0) {
       const error = new AppError({
         code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
@@ -64,26 +66,93 @@ export function handleWebSocketMessage(
       return;
     }
 
-    const securityCheck = WebSocketSecurity.validateMessage(message);
+    let parsedMessage: unknown;
+    try {
+      parsedMessage = JSON.parse(messageString);
+    } catch (jsonError) {
+      const error = new AppError({
+        code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
+        message: "Invalid JSON format in message",
+        statusCode: 400,
+        details: { reason: (jsonError instanceof Error ? jsonError.message : String(jsonError)) }
+      });
+      ErrorHandler.handleWebSocketError(ws, error, "json_parse_error");
+      return;
+    }
+
+    if (!ws.data.authenticated) {
+      if (!parsedMessage || typeof parsedMessage !== 'object' || (parsedMessage as any).type !== 'AUTH') {
+        const error = new AppError({
+          code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
+          message: "Authentication required before any other action.",
+          statusCode: 401,
+        });
+        ErrorHandler.handleWebSocketError(ws, error, "auth_required");
+        ws.close(4001, "Authentication required");
+        return;
+      }
+
+      const validation = safeValidate(AuthDataSchema, (parsedMessage as any).data);
+      if (!validation.success) {
+        const error = new AppError({
+          code: ErrorCode.VALIDATION_ERROR,
+          message: validation.error || "Invalid auth message format",
+          statusCode: 400,
+        });
+        ErrorHandler.handleWebSocketError(ws, error, "auth_schema_validation");
+        ws.close(4002, "Invalid auth message");
+        return;
+      }
+
+      const { token, adminToken } = validation.data;
+      if (!token || typeof token !== 'string') {
+        const error = new AppError({
+          code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
+          message: "Invalid or missing token.",
+          statusCode: 401,
+        });
+        ErrorHandler.handleWebSocketError(ws, error, "auth_token_invalid");
+        ws.close(4003, "Invalid token");
+        return;
+      }
+ 
+      ws.data.userId = token;
+      ws.data.authenticated = true;
+
+      if (!usersManager.get(ws.data.userId)) {
+        usersManager.createUser({
+          id: ws.data.userId,
+          username: "", // No username at auth, can update later
+          roomId: "",
+          socketId: nanoid(),
+          isAdmin: ws.data.isAdmin,
+        });
+      }
+      ws.send(JSON.stringify({
+        type: 'AUTH_SUCCESS',
+        data: { userId: ws.data.userId, isAdmin: ws.data.isAdmin },
+      }));
+      return;
+    }
+
+    const securityCheck = WebSocketSecurity.validateMessage(parsedMessage);
     if (!securityCheck.valid) {
       const error = new AppError({
         code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
-        message: "Message validation failed",
+        message: securityCheck.reason || "Message validation failed",
         statusCode: 400,
-        details: { reason: securityCheck.reason }
       });
       ErrorHandler.handleWebSocketError(ws, error, "security_validation");
       return;
     }
 
-    const validation = safeValidate(WebSocketMessageSchema, message);
+    const validation = safeValidate(WebSocketMessageSchema, parsedMessage);
 
     if (!validation.success) {
       const error = new AppError({
         code: ErrorCode.VALIDATION_ERROR,
-        message: "Invalid message format",
+        message: validation.error || "Invalid message format",
         statusCode: 400,
-        details: { validationError: validation.error }
       });
       ErrorHandler.handleWebSocketError(ws, error, "schema_validation");
       return;
@@ -143,6 +212,10 @@ export function handleWebSocketMessage(
 export function handleWebSocketClose(ws: ServerWebSocket<WebSocketData>) {
   logger.info("WebSocket connection closed");
 
+  if (ws.data?.userId) {
+    usersManager.delete(ws.data.userId);
+  }
+
   if (ws.data?.userId && ws.data?.roomId) {
     handleLeaveRoom(ws);
   } else if (ws.data?.userId) {
@@ -151,21 +224,20 @@ export function handleWebSocketClose(ws: ServerWebSocket<WebSocketData>) {
 }
 
 function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: JoinRoomData) {
-  const { inviteCode, username, userId } = data;
+  const { inviteCode, username } = data;
+  const userId = ws.data.userId;
 
-  if (ws.data.userId && ws.data.roomId) {
+  if (!userId) {
+    const error = ErrorHandler.createRoomError("User not authenticated", ErrorCode.AUTHENTICATION_ERROR);
+    ErrorHandler.handleWebSocketError(ws, error, "join_room");
+    return;
+  }
+
+  if (ws.data.roomId) {
     const error = ErrorHandler.createRoomError("User already in a room", ErrorCode.USER_ALREADY_IN_ROOM);
     ErrorHandler.handleWebSocketError(ws, error, "join_room");
     return;
   }
-
-  // Missing: Check if userId is already in use
-  if (usersManager.get(data.userId)) {
-    const error = ErrorHandler.createRoomError("User ID already in use", ErrorCode.USER_ALREADY_EXISTS);
-    ErrorHandler.handleWebSocketError(ws, error, "join_room");
-    return;
-  }
-
 
   const room = roomsManager.getRoomByInviteCode(inviteCode);
 
@@ -181,27 +253,28 @@ function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: JoinRoomData) 
     return;
   }
 
-
   if (room.members.length >= room.maxRoomSize) {
     const error = ErrorHandler.createRoomError("Room is full", ErrorCode.ROOM_FULL);
     ErrorHandler.handleWebSocketError(ws, error, "join_room");
     return;
   }
 
-  const user = usersManager.createUser({
-    id: userId,
+  const updatedUser = usersManager.updateUser(userId, {
     username,
     roomId: room.id,
-    socketId: nanoid(),
-    isAdmin: false,
   });
 
-  ws.data.userId = user.id;
+  if (!updatedUser) {
+    const error = ErrorHandler.createRoomError("User not found", ErrorCode.USER_NOT_FOUND);
+    ErrorHandler.handleWebSocketError(ws, error, "join_room");
+    return;
+  }
+
   ws.data.roomId = room.id;
 
-  addConnection(user.id, ws);
+  addConnection(userId, ws);
 
-  const updatedRoom = roomsManager.addUserToRoom(room.id, user);
+  const updatedRoom = roomsManager.addUserToRoom(room.id, updatedUser);
 
   if (!updatedRoom) {
     const error = ErrorHandler.createRoomError("Failed to join room", ErrorCode.INTERNAL_ERROR);
@@ -210,41 +283,58 @@ function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: JoinRoomData) 
   }
 
   ws.send(JSON.stringify({
-    type: "JOIN_ROOM_SUCCESS",
-    data: { room: updatedRoom, user },
+    type: WS_MESSAGE_TYPES.JOIN_ROOM_SUCCESS,
+    data: { room: updatedRoom, user: updatedUser },
   }));
 
   broadcastToRoom(room.id, {
-    type: "USER_JOINED",
-    data: { user, room: updatedRoom },
-  }, [user.id]);
+    type: WS_MESSAGE_TYPES.USER_JOINED,
+    data: { user: updatedUser, room: updatedRoom },
+  }, [userId]);
 }
 
 function handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: CreateRoomData) {
-  const { roomName, username, userId, settings } = data;
+  const { username, settings } = data;
+  const userId = ws.data.userId;
+
+  if (!userId) {
+    const error = ErrorHandler.createRoomError("User not authenticated", ErrorCode.AUTHENTICATION_ERROR);
+    ErrorHandler.handleWebSocketError(ws, error, "create_room");
+    return;
+  }
+
+  if (ws.data.roomId) {
+    const error = ErrorHandler.createRoomError("User already in a room", ErrorCode.USER_ALREADY_IN_ROOM);
+    ErrorHandler.handleWebSocketError(ws, error, "create_room");
+    return;
+  }
 
   const roomId = nanoid();
-  const user = usersManager.createUser({
-    id: userId,
+  
+  const updatedUser = usersManager.updateUser(userId, {
     username,
     roomId,
-    socketId: nanoid(),
     isAdmin: true,
   });
 
-  const room = roomsManager.create(roomId, roomName, user, {
+  if (!updatedUser) {
+    const error = ErrorHandler.createRoomError("User not found", ErrorCode.USER_NOT_FOUND);
+    ErrorHandler.handleWebSocketError(ws, error, "create_room");
+    return;
+  }
+
+  const room = roomsManager.create(roomId, updatedUser, {
     difficulty: (settings?.difficulty || DEFAULT_DIFFICULTY)
   });
 
-  ws.data.userId = user.id;
   ws.data.roomId = room.id;
   ws.data.isAdmin = true;
 
-  addConnection(user.id, ws);
+  addConnection(userId, ws);
 
   ws.send(JSON.stringify({
-    type: "CREATE_ROOM_SUCCESS",
-    data: { room, user },
+    type: WS_MESSAGE_TYPES.CREATE_ROOM_SUCCESS,
+    data: { room, user: updatedUser },
   }));
 }
 
@@ -265,13 +355,13 @@ function handleLeaveRoom(ws: ServerWebSocket<WebSocketData>) {
     usersManager.updateUser(newHost.id, { isAdmin: true });
 
     broadcastToRoom(roomId, {
-      type: "HOST_CHANGED",
+      type: WS_MESSAGE_TYPES.HOST_CHANGED,
       data: { newHost: newHost },
     });
   }
 
   broadcastToRoom(roomId, {
-    type: "USER_LEFT",
+    type: WS_MESSAGE_TYPES.USER_LEFT,
     data: {
       userId: userId,
       room: updatedRoom ? updatedRoom : null,
@@ -343,7 +433,7 @@ function handleToggleReady(ws: ServerWebSocket<WebSocketData>) {
 
   if (updatedUser) {
     broadcastToRoom(roomId, {
-      type: "USER_READY_CHANGED",
+      type: WS_MESSAGE_TYPES.USER_READY_CHANGED,
       data: {
         userId: userId,
         isReady: updatedUser.isReady,
@@ -364,7 +454,7 @@ function handleUpdateSettings(ws: ServerWebSocket<WebSocketData>, data: UpdateSe
   }) as Room;
 
   broadcastToRoom(roomId, {
-    type: "SETTINGS_UPDATED",
+    type: WS_MESSAGE_TYPES.SETTINGS_UPDATED,
     data: { settings: updatedRoom?.settings },
   });
 }
@@ -412,7 +502,7 @@ function handleKickUser(ws: ServerWebSocket<WebSocketData>, data: KickUserData) 
   const targetUser = usersManager.get(data.userId);
   if (targetUser) {
     broadcastToUser(data.userId, {
-      type: "KICKED",
+      type: WS_MESSAGE_TYPES.KICKED,
       data: { reason: "Kicked by host" },
     });
 

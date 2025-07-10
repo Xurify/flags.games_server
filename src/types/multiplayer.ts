@@ -97,7 +97,8 @@ export interface WebSocketData {
   userId: string | null;
   roomId: string | null;
   isAdmin: boolean;
-  ipAddress?: string; // Store IP address from initial handshake
+  authenticated: boolean;
+  ipAddress?: string;
 }
 
 type GameMessageType =

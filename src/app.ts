@@ -11,6 +11,7 @@ import { logger } from "./lib/utils/logger";
 import { ServerWebSocket } from "bun";
 import { metricsCollector } from "./lib/utils/metrics";
 import { env, isDevelopment } from "./lib/utils/env";
+import { WebSocketData } from "./types/multiplayer";
 
 const createJsonResponse = (data: unknown, status = 200, origin: string | null = null) =>
   new Response(JSON.stringify(data), {
@@ -151,11 +152,11 @@ const server = serve({
       metricsCollector.increment("activeConnections");
       handleWebSocketOpen(ws);
     },
-    message: (ws: ServerWebSocket<any>, message: string | Buffer) => {
+    message: (ws: ServerWebSocket<WebSocketData>, message: string | Buffer) => {
       metricsCollector.increment("totalMessages");
       handleWebSocketMessage(ws, message);
     },
-    close: (ws: ServerWebSocket<any>) => {
+    close: (ws: ServerWebSocket<WebSocketData>) => {
       metricsCollector.increment("activeConnections", -1);
       handleWebSocketClose(ws);
     },

@@ -19,6 +19,7 @@ export const VALIDATION_LIMITS = {
   INVITE_CODE_LENGTH: 6,
   QUESTION_COUNT: { MIN: 5, MAX: 50 },
   TIME_PER_QUESTION: { MIN: 10, MAX: 60 },
+  ROOM_SIZE: { MIN: 2, MAX: 5 }
 } as const;
 
 export const REGEX_PATTERNS = {
@@ -29,4 +30,4 @@ export const REGEX_PATTERNS = {
 
 export const INAPPROPRIATE_WORDS = [
   'admin', 'moderator', 'bot', 'system', 'null', 'undefined'
-] as const;
+] as const; 

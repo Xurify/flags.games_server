@@ -14,17 +14,17 @@ const BaseMessageSchema = z.object({
   timestamp: z.number().optional(),
 });
 
+// TODO: Might implement randomized room name in the future
+
 export const CreateRoomDataSchema = z.object({
   username: UsernameSchema,
-  userId: UserIdSchema,
-  roomName: RoomNameSchema,
+  //roomName: RoomNameSchema,
   settings: RoomSettingsSchema.partial().optional(),
 });
 
 export const JoinRoomDataSchema = z.object({
   inviteCode: InviteCodeSchema,
   username: UsernameSchema,
-  userId: UserIdSchema,
 });
 
 export const SubmitAnswerDataSchema = z.object({
@@ -40,7 +40,16 @@ export const KickUserDataSchema = z.object({
   userId: UserIdSchema,
 });
 
+export const AuthDataSchema = z.object({
+  token: z.string().min(1),
+  adminToken: z.string().optional(),
+});
+
 export const WebSocketMessageSchema = z.discriminatedUnion('type', [
+  BaseMessageSchema.extend({
+    type: z.literal('AUTH'),
+    data: AuthDataSchema,
+  }),
   BaseMessageSchema.extend({
     type: z.literal('CREATE_ROOM'),
     data: CreateRoomDataSchema,

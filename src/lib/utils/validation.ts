@@ -59,9 +59,22 @@ export const validateUserId = createValidator(UserIdSchema);
 
 export const safeValidate = <T>(schema: z.ZodSchema<T>, data: unknown) => {
   const result = schema.safeParse(data);
-  return result.success
-    ? { success: true as const, data: result.data }
-    : { success: false as const, error: result.error.errors[0]?.message || 'Validation failed' };
+  if (result.success) {
+    return { success: true as const, data: result.data };
+  } else {
+    // Group errors by field and show only the first error per field
+    const errorMap = new Map<string, string>();
+    for (const e of result.error.errors) {
+      const path = e.path.join('.');
+      if (!errorMap.has(path)) {
+        errorMap.set(path, e.message);
+      }
+    }
+    const errorMessages = Array.from(errorMap.entries())
+      .map(([path, message]) => `${path}: ${message}`)
+      .join('; ');
+    return { success: false as const, error: errorMessages || 'Validation failed' };
+  }
 };
 
 export const sanitizeString = InputSanitizer.sanitizeString;
