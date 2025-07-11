@@ -90,7 +90,6 @@ class GameManager {
       correctAnswer: questionData.currentCountry.code,
       startTime: Date.now(),
       endTime: Date.now() + room.settings.timePerQuestion * 1000,
-      timeLimit: room.settings.timePerQuestion,
     };
 
     roomsManager.updateGameState(roomId, {
@@ -107,7 +106,6 @@ class GameManager {
           questionNumber: question.questionNumber,
           country: question.country,
           options: question.options,
-          timeLimit: question.timeLimit,
         },
         totalQuestions: gameState.totalQuestions,
       },
@@ -146,7 +144,7 @@ class GameManager {
       const basePoints = this.getBasePoints(room.settings.difficulty);
       const speedBonus = this.calculateSpeedBonus(
         timeToAnswer,
-        question.timeLimit
+        room.settings.timePerQuestion
       );
       pointsAwarded = basePoints + speedBonus;
     }
@@ -326,9 +324,9 @@ class GameManager {
     }
   }
 
-  private calculateSpeedBonus(timeToAnswer: number, timeLimit: number): number {
+  private calculateSpeedBonus(timeToAnswer: number, timePerQuestion: number): number {
     const timeInSeconds = timeToAnswer / 1000;
-    const speedRatio = 1 - timeInSeconds / timeLimit;
+    const speedRatio = 1 - timeInSeconds / timePerQuestion;
     return Math.max(0, Math.floor(speedRatio * 500));
   }
 

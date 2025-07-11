@@ -25,7 +25,6 @@ export interface GameQuestion {
   correctAnswer: string;
   startTime: number;
   endTime: number;
-  timeLimit: number;
 }
 
 export interface GameAnswer {

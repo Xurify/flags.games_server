@@ -120,7 +120,6 @@ export function handleWebSocketMessage(
       ws.data.authenticated = true;
 
       if (!usersManager.getUser(ws.data.userId)) {
-        logger.info("Creating new user during AUTH", { userId: ws.data.userId, isAdmin: ws.data.isAdmin });
         usersManager.createUser({
           id: ws.data.userId,
           username: "",
@@ -247,26 +246,48 @@ export function handleWebSocketMessage(
 }
 
 export function handleWebSocketClose(ws: ServerWebSocket<WebSocketData>) {
-  logger.info("WebSocket connection closed", {
-    userId: ws.data?.userId,
-    roomId: ws.data?.roomId,
-    authenticated: ws.data?.authenticated,
-    isAdmin: ws.data?.isAdmin
-  });
-
-  if (ws.data?.userId && ws.data?.roomId) {
-    logger.info("User leaving room", { userId: ws.data.userId, roomId: ws.data.roomId });
-    handleLeaveRoom(ws);
-  } else if (ws.data?.userId) {
-    logger.info("Removing connection for user", { userId: ws.data.userId });
+  if (ws.data?.userId) {
+    handleUserDisconnect(ws.data.userId);
     removeConnection(ws.data.userId);
   }
+}
 
-  if (ws.data?.userId) {
-    logger.info("Removing user connection", { userId: ws.data.userId });
-    removeConnection(ws.data.userId);
-    // Don't delete the user entirely, just remove their connection
-    // The user data should persist for reconnection
+function handleUserDisconnect(userId: string) {
+  const user = usersManager.getUser(userId);
+  
+  if (user && user.roomId && user.roomId !== "") {
+    logger.info("User leaving room on disconnect", { userId, roomId: user.roomId });
+    
+    const updatedRoom = roomsManager.removeUserFromRoom(user.roomId, userId);
+
+    usersManager.updateUser(userId, { roomId: "" });
+    
+    if (user.roomId && updatedRoom) {
+      const room = roomsManager.get(user.roomId);
+      if (room && room.host === userId && updatedRoom.members.length > 0) {
+        const newHost = updatedRoom.members[0];
+        roomsManager.setNewHost(user.roomId, newHost.id);
+        usersManager.updateUser(newHost.id, { isAdmin: true });
+
+        broadcastToRoom(user.roomId, {
+          type: WS_MESSAGE_TYPES.HOST_CHANGED,
+          data: { newHost: newHost },
+        });
+      }
+
+      broadcastToRoom(user.roomId, {
+        type: WS_MESSAGE_TYPES.USER_LEFT,
+        data: {
+          userId: userId,
+          room: updatedRoom,
+        },
+      });
+
+      if (updatedRoom.members.length === 0) {
+        gameManager.stopGame(user.roomId);
+        roomsManager.scheduleDeletion(user.roomId, 30 * 60 * 1000); // 30 minutes
+      }
+    }
   }
 }
 
