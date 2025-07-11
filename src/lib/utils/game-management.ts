@@ -8,6 +8,7 @@ import {
   GameAnswer,
 } from "../../types/multiplayer";
 import { broadcastToRoom } from "./websockets";
+import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
 
 class GameManager {
   private questionTimers = new Map<string, Timer>();
@@ -46,7 +47,7 @@ class GameManager {
     roomsManager.updateGameState(roomId, gameState);
 
     broadcastToRoom(roomId, {
-      type: "GAME_STARTING",
+      type: WS_MESSAGE_TYPES.GAME_STARTING,
       data: { countdown: 3 },
     });
 
@@ -100,7 +101,7 @@ class GameManager {
     });
 
     broadcastToRoom(roomId, {
-      type: "NEW_QUESTION",
+      type: WS_MESSAGE_TYPES.NEW_QUESTION,
       data: {
         question: {
           questionNumber: question.questionNumber,
@@ -125,7 +126,7 @@ class GameManager {
     answer: string
   ): Promise<void> {
     const room = roomsManager.get(roomId);
-    const user = usersManager.get(userId);
+    const user = usersManager.getUser(userId);
 
     if (!room || !user || !room.gameState.currentQuestion) return;
     if (room.gameState.phase !== "question") return;
@@ -170,7 +171,7 @@ class GameManager {
     roomsManager.updateGameState(roomId, { answers: updatedAnswers });
 
     broadcastToRoom(roomId, {
-      type: "ANSWER_SUBMITTED",
+      type: WS_MESSAGE_TYPES.ANSWER_SUBMITTED,
       data: {
         userId,
         username: user.username,
@@ -196,7 +197,7 @@ class GameManager {
     const resultsData = this.generateResultsData(room);
 
     broadcastToRoom(roomId, {
-      type: "QUESTION_RESULTS",
+      type: WS_MESSAGE_TYPES.QUESTION_RESULTS,
       data: resultsData,
     });
 
@@ -223,7 +224,7 @@ class GameManager {
     });
 
     broadcastToRoom(roomId, {
-      type: "GAME_ENDED",
+      type: WS_MESSAGE_TYPES.GAME_ENDED,
       data: {
         leaderboard: finalLeaderboard,
         gameStats: this.generateGameStats(room),
@@ -248,7 +249,7 @@ class GameManager {
       })),
       leaderboard: room.members
         .map((member) => {
-          const user = usersManager.get(member.id);
+          const user = usersManager.getUser(member.id);
           return user
             ? {
               userId: user.id,
@@ -265,7 +266,7 @@ class GameManager {
   private generateFinalLeaderboard(room: Room) {
     return room.members
       .map((member) => {
-        const user = usersManager.get(member.id);
+        const user = usersManager.getUser(member.id);
         if (!user) return null;
 
         const userAnswers = room.gameState.answers.filter(
@@ -354,7 +355,7 @@ class GameManager {
     roomsManager.updateGameState(roomId, { isPaused: true });
 
     broadcastToRoom(roomId, {
-      type: "GAME_PAUSED",
+      type: WS_MESSAGE_TYPES.GAME_PAUSED,
       data: { timestamp: Date.now() },
     });
 
@@ -369,7 +370,7 @@ class GameManager {
     roomsManager.updateGameState(roomId, { isPaused: false });
 
     broadcastToRoom(roomId, {
-      type: "GAME_RESUMED",
+      type: WS_MESSAGE_TYPES.GAME_RESUMED,
       data: { timestamp: Date.now() },
     });
 
@@ -411,7 +412,7 @@ class GameManager {
     });
 
     broadcastToRoom(roomId, {
-      type: "GAME_STOPPED",
+      type: WS_MESSAGE_TYPES.GAME_STOPPED,
       data: { timestamp: Date.now() },
     });
 

@@ -6,6 +6,7 @@ import { CustomWebSocket } from "../../types/multiplayer";
 import { validateUsername } from "../utils/validation";
 import { ErrorHandler } from "../utils/error-handler";
 import { logger } from "../utils/logger";
+import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
 
 export function handleGameSpecificEvents(ws: CustomWebSocket, type: string, data: any) {
   const { userId, roomId } = ws.data;
@@ -13,15 +14,15 @@ export function handleGameSpecificEvents(ws: CustomWebSocket, type: string, data
   if (!userId || !roomId) return;
 
   switch (type) {      
-    case 'SKIP_QUESTION':
+    case WS_MESSAGE_TYPES.SKIP_QUESTION:
       handleSkipQuestion(ws);
       break;
 
-    case 'REACTION':
+    case WS_MESSAGE_TYPES.REACTION:
       handleReaction(ws, data);
       break;
       
-    case 'UPDATE_PROFILE':
+    case WS_MESSAGE_TYPES.UPDATE_PROFILE:
       handleUpdateProfile(ws, data);
       break;
       
@@ -39,7 +40,7 @@ function handleSkipQuestion(ws: CustomWebSocket) {
   if (!room.gameState.isActive) return;
 
   broadcastToRoom(roomId!, {
-    type: 'QUESTION_SKIPPED',
+    type: WS_MESSAGE_TYPES.QUESTION_SKIPPED,
     data: { skippedBy: userId }
   });
 
@@ -49,7 +50,7 @@ function handleSkipQuestion(ws: CustomWebSocket) {
 function handleReaction(ws: CustomWebSocket, data: any) {
   const { userId, roomId } = ws.data;
   const { reaction, targetUserId } = data;
-  const user = usersManager.get(userId!);
+  const user = usersManager.getUser(userId!);
   
   if (!user) return;
 
@@ -57,7 +58,7 @@ function handleReaction(ws: CustomWebSocket, data: any) {
   if (!validReactions.includes(reaction)) return;
 
   broadcastToRoom(roomId!, {
-    type: 'USER_REACTION',
+    type: WS_MESSAGE_TYPES.USER_REACTION,
     data: {
       fromUserId: userId,
       fromUsername: user.username,
@@ -71,7 +72,7 @@ function handleReaction(ws: CustomWebSocket, data: any) {
 function handleUpdateProfile(ws: CustomWebSocket, data: any) {
   const { userId } = ws.data;
   const { color, username } = data;
-  const user = usersManager.get(userId!);
+  const user = usersManager.getUser(userId!);
   
   if (!user) return;
 
@@ -95,13 +96,13 @@ function handleUpdateProfile(ws: CustomWebSocket, data: any) {
   
   if (updatedUser) {
     ws.send(JSON.stringify({
-      type: 'PROFILE_UPDATED',
+      type: WS_MESSAGE_TYPES.PROFILE_UPDATED,
       data: { user: updatedUser }
     }));
     
     if (username) {
       broadcastToRoom(user.roomId, {
-        type: 'USER_PROFILE_UPDATED',
+        type: WS_MESSAGE_TYPES.USER_PROFILE_UPDATED,
         data: { 
           userId: userId,
           username: updatedUser.username,

@@ -15,6 +15,7 @@ interface CleanupStats {
   activeRooms: number;
   emptyRooms: number;
   inactiveUsers: number;
+  scheduledDeletions: number;
   nextCleanup: number;
 }
 
@@ -144,6 +145,7 @@ class CleanupService {
       inactiveUsers: usersManager.getInactiveUsers(
         this.config.inactiveUserTimeout
       ).length,
+      scheduledDeletions: roomsManager.getScheduledDeletionCount(),
       nextCleanup: this.isRunning ? this.config.interval : 0,
     };
   }

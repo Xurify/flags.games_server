@@ -81,7 +81,7 @@ export function handleWebSocketMessage(
     }
 
     if (!ws.data.authenticated) {
-      if (!parsedMessage || typeof parsedMessage !== 'object' || (parsedMessage as any).type !== 'AUTH') {
+      if (!parsedMessage || typeof parsedMessage !== 'object' || (parsedMessage as any).type !== WS_MESSAGE_TYPES.AUTH) {
         const error = new AppError({
           code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
           message: "Authentication required before any other action.",
@@ -115,11 +115,11 @@ export function handleWebSocketMessage(
         ws.close(4003, "Invalid token");
         return;
       }
- 
+
       ws.data.userId = token;
       ws.data.authenticated = true;
 
-      if (!usersManager.get(ws.data.userId)) {
+      if (!usersManager.getUser(ws.data.userId)) {
         logger.info("Creating new user during AUTH", { userId: ws.data.userId, isAdmin: ws.data.isAdmin });
         usersManager.createUser({
           id: ws.data.userId,
@@ -131,10 +131,43 @@ export function handleWebSocketMessage(
       }
 
       addConnection(ws.data.userId, ws);
-      
+
+      const user = usersManager.getUser(ws.data.userId);
+      const users = usersManager.getUsers();
+
+      // Check if user is already in a room and fetch that room
+      let room = null;
+      if (user && user.roomId && user.roomId !== "") {
+        room = roomsManager.get(user.roomId);
+        // Set the websocket roomId to match the user's roomId
+        ws.data.roomId = user.roomId;
+      } else {
+        // Only try to get room if roomId is actually set on websocket
+        room = ws.data?.roomId ? roomsManager.get(ws.data.roomId) : null;
+      }
+
+      // Check if user is host of any existing room
+      const allRooms = Array.from(roomsManager.rooms.values());
+      const userAsHost = allRooms.find(r => r.host === ws.data.userId);
+      if (userAsHost) {
+        // If user is host but roomId is empty, fix the user's roomId
+        if (user && (!user.roomId || user.roomId === "")) {
+          usersManager.updateUser(ws.data.userId, { roomId: userAsHost.id });
+          room = userAsHost;
+          ws.data.roomId = userAsHost.id;
+        }
+        
+        // Also check if user is host but not in members array
+        const userInMembers = userAsHost.members.find(m => m.id === ws.data.userId);
+        if (!userInMembers && user) {
+          roomsManager.addUserToRoom(userAsHost.id, user);
+          room = roomsManager.get(userAsHost.id); // Refresh room data
+        }
+      }
+
       ws.send(JSON.stringify({
-        type: 'AUTH_SUCCESS',
-        data: { userId: ws.data.userId, isAdmin: ws.data.isAdmin },
+        type: WS_MESSAGE_TYPES.AUTH_SUCCESS,
+        data: { userId: ws.data.userId, isAdmin: ws.data.isAdmin, user, room },
       }));
       return;
     }
@@ -165,40 +198,40 @@ export function handleWebSocketMessage(
     const data = validation.data;
 
     switch (data.type) {
-      case "JOIN_ROOM":
+      case WS_MESSAGE_TYPES.JOIN_ROOM:
         handleJoinRoom(ws, data.data);
         break;
-      case "CREATE_ROOM":
+      case WS_MESSAGE_TYPES.CREATE_ROOM:
         handleCreateRoom(ws, data.data);
         break;
-      case "SUBMIT_ANSWER":
+      case WS_MESSAGE_TYPES.SUBMIT_ANSWER:
         handleSubmitAnswer(ws, data.data);
         break;
-      case "UPDATE_SETTINGS":
+      case WS_MESSAGE_TYPES.UPDATE_SETTINGS:
         handleUpdateSettings(ws, data.data);
         break;
-      case "KICK_USER":
+      case WS_MESSAGE_TYPES.KICK_USER:
         handleKickUser(ws, data.data);
         break;
-      case "LEAVE_ROOM":
+      case WS_MESSAGE_TYPES.LEAVE_ROOM:
         handleLeaveRoom(ws);
         break;
-      case "START_GAME":
+      case WS_MESSAGE_TYPES.START_GAME:
         handleStartGame(ws);
         break;
-      case "TOGGLE_READY":
+      case WS_MESSAGE_TYPES.TOGGLE_READY:
         handleToggleReady(ws);
         break;
-      case "PAUSE_GAME":
+      case WS_MESSAGE_TYPES.PAUSE_GAME:
         handlePauseGame(ws);
         break;
-      case "RESUME_GAME":
+      case WS_MESSAGE_TYPES.RESUME_GAME:
         handleResumeGame(ws);
         break;
-      case "STOP_GAME":
+      case WS_MESSAGE_TYPES.STOP_GAME:
         handleStopGame(ws);
         break;
-      case "HEARTBEAT_RESPONSE":
+      case WS_MESSAGE_TYPES.HEARTBEAT_RESPONSE:
         handleHeartbeatResponseMessage(ws);
         break;
     }
@@ -230,9 +263,10 @@ export function handleWebSocketClose(ws: ServerWebSocket<WebSocketData>) {
   }
 
   if (ws.data?.userId) {
-    logger.info("Deleting user from usersManager", { userId: ws.data.userId });
-    const deleted = usersManager.delete(ws.data.userId);
-    logger.info("User deletion result", { userId: ws.data.userId, deleted });
+    logger.info("Removing user connection", { userId: ws.data.userId });
+    removeConnection(ws.data.userId);
+    // Don't delete the user entirely, just remove their connection
+    // The user data should persist for reconnection
   }
 }
 
@@ -266,7 +300,7 @@ function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: JoinRoomData) 
     return;
   }
 
-  if (room.members.length >= room.maxRoomSize) {
+  if (room.members.length >= room.settings.maxRoomSize) {
     const error = ErrorHandler.createRoomError("Room is full", ErrorCode.ROOM_FULL);
     ErrorHandler.handleWebSocketError(ws, error, "join_room");
     return;
@@ -285,7 +319,12 @@ function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: JoinRoomData) 
 
   ws.data.roomId = room.id;
 
-  addConnection(userId, ws);
+  //addConnection(userId, ws);
+
+  // Cancel scheduled deletion if the room was empty and scheduled for deletion
+  if (roomsManager.isScheduledForDeletion(room.id)) {
+    roomsManager.cancelScheduledDeletion(room.id);
+  }
 
   const updatedRoom = roomsManager.addUserToRoom(room.id, updatedUser);
 
@@ -323,7 +362,7 @@ function handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: CreateRoomDa
   }
 
   const roomId = nanoid();
-  
+
   const updatedUser = usersManager.updateUser(userId, {
     username,
     roomId,
@@ -340,10 +379,10 @@ function handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: CreateRoomDa
     difficulty: (settings?.difficulty || DEFAULT_DIFFICULTY)
   });
 
-  ws.data.roomId = room.id;
+  ws.data.roomId = roomId;
   ws.data.isAdmin = true;
 
-  addConnection(userId, ws);
+  //addConnection(userId, ws);
 
   ws.send(JSON.stringify({
     type: WS_MESSAGE_TYPES.CREATE_ROOM_SUCCESS,
@@ -383,7 +422,8 @@ function handleLeaveRoom(ws: ServerWebSocket<WebSocketData>) {
 
   if (updatedRoom && updatedRoom.members.length === 0) {
     gameManager.stopGame(roomId);
-    roomsManager.delete(roomId);
+    // Schedule room deletion after 30 minutes instead of immediate deletion
+    roomsManager.scheduleDeletion(roomId, 30 * 60 * 1000); // 30 minutes
   }
 
   ws.data.userId = null;
@@ -439,7 +479,7 @@ function handleToggleReady(ws: ServerWebSocket<WebSocketData>) {
 
   if (!userId || !roomId) return;
 
-  const user = usersManager.get(userId);
+  const user = usersManager.getUser(userId);
   if (!user) return;
 
   const updatedUser = usersManager.setUserReady(userId, !user.isReady);
@@ -512,7 +552,7 @@ function handleKickUser(ws: ServerWebSocket<WebSocketData>, data: KickUserData) 
   const room = roomsManager.get(roomId);
   if (!room || room.host !== userId) return;
 
-  const targetUser = usersManager.get(data.userId);
+  const targetUser = usersManager.getUser(data.userId);
   if (targetUser) {
     broadcastToUser(data.userId, {
       type: WS_MESSAGE_TYPES.KICKED,

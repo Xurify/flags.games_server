@@ -1,6 +1,7 @@
 import { ServerWebSocket } from "bun";
 import { Country } from "../lib/game-logic/data/countries";
 import { Difficulty } from "../lib/constants";
+import { WS_MESSAGE_TYPES } from "../lib/constants/ws-message-types";
 
 export interface User {
   id: string;
@@ -69,10 +70,10 @@ export interface Room {
   gameState: GameState;
   members: User[];
   previouslyConnectedMembers: Array<{ userId: string; username: string }>;
-  maxRoomSize: number;
   created: string;
-  private: boolean;
   settings: {
+    private: boolean;
+    maxRoomSize: number;
     difficulty: Difficulty;
     questionCount: number;
     timePerQuestion: number;
@@ -102,6 +103,6 @@ export interface WebSocketData {
 }
 
 type GameMessageType =
-  | { type: 'SUBMIT_ANSWER'; data: { answer: string; questionId: string } }
-  | { type: 'START_GAME'; data: {} }
-  | { type: 'JOIN_ROOM'; data: { roomId: string; username: string } };
+  | { type: typeof WS_MESSAGE_TYPES.SUBMIT_ANSWER; data: { answer: string; questionId: string } }
+  | { type: typeof WS_MESSAGE_TYPES.START_GAME; data: {} }
+  | { type: typeof WS_MESSAGE_TYPES.JOIN_ROOM; data: { roomId: string; username: string } };

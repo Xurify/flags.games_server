@@ -1,5 +1,6 @@
 import { CustomWebSocket } from "../../types/multiplayer";
 import { logger } from "./logger";
+import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
 
 interface HeartbeatConfig {
   interval: number;
@@ -23,7 +24,7 @@ export class HeartbeatManager {
   private onUserActivity: (userId: string) => void;
 
   private readonly HEARTBEAT_MESSAGE_TEMPLATE = {
-    type: 'HEARTBEAT' as const,
+    type: WS_MESSAGE_TYPES.HEARTBEAT,
     timestamp: 0
   };
 

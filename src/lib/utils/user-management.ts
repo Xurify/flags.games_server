@@ -41,21 +41,25 @@ class UserManager {
     return user;
   }
 
-  get(userId: string): User | undefined {
+  getUser(userId: string): User | undefined {
     return this.users.get(userId);
   }
 
-  has(userId: string): boolean {
+  hasUser(userId: string): boolean {
     return this.users.has(userId);
   }
 
-  set(userId: string, user: User): void {
+  setUser(userId: string, user: User): void {
     this.users.set(userId, user);
   }
 
-  delete(userId: string): boolean {
+  deleteUser(userId: string): boolean {
     this.userConnections.delete(userId);
     return this.users.delete(userId);
+  }
+
+  getUsers(): Map<string, User> {
+    return this.users;
   }
 
   setUsers(users: Map<string, User>): void {
@@ -67,38 +71,38 @@ class UserManager {
   }
 
   updateUser(userId: string, updates: Partial<User>): User | null {
-    const user = this.get(userId);
+    const user = this.getUser(userId);
     if (!user) return null;
 
     const updatedUser = { ...user, ...updates };
-    this.set(userId, updatedUser);
+    this.setUser(userId, updatedUser);
     return updatedUser;
   }
 
   updateUserScore(userId: string, points: number): User | null {
-    const user = this.get(userId);
+    const user = this.getUser(userId);
     if (!user) return null;
 
     const updatedUser = { ...user, score: user.score + points };
-    this.set(userId, updatedUser);
+    this.setUser(userId, updatedUser);
     return updatedUser;
   }
 
   setUserReady(userId: string, isReady: boolean): User | null {
-    const user = this.get(userId);
+    const user = this.getUser(userId);
     if (!user) return null;
 
     const updatedUser = { ...user, isReady };
-    this.set(userId, updatedUser);
+    this.setUser(userId, updatedUser);
     return updatedUser;
   }
 
   resetUserScore(userId: string): User | null {
-    const user = this.get(userId);
+    const user = this.getUser(userId);
     if (!user) return null;
 
     const updatedUser = { ...user, score: 0 };
-    this.set(userId, updatedUser);
+    this.setUser(userId, updatedUser);
     return updatedUser;
   }
 
@@ -121,10 +125,11 @@ class UserManager {
   }
 
   removeUserFromRoom(userId: string): void {
-    const user = this.get(userId);
+    const user = this.getUser(userId);
     if (user) {
       roomsManager.removeUserFromRoom(user.roomId, userId);
-      this.delete(userId);
+      // Clear the user's roomId instead of deleting the user entirely
+      this.updateUser(userId, { roomId: "" });
     }
   }
 
@@ -179,7 +184,7 @@ class UserManager {
   }
 
   getUserStats(userId: string): any {
-    const user = this.get(userId);
+    const user = this.getUser(userId);
     if (!user) return null;
 
     return {
@@ -194,7 +199,7 @@ class UserManager {
   }
 
   banUser(userId: string, reason?: string): boolean {
-    const user = this.get(userId);
+    const user = this.getUser(userId);
     if (!user) return false;
 
     // TODO: Store banned users
@@ -204,7 +209,7 @@ class UserManager {
   }
 
   changeUserColor(userId: string, color?: string): User | null {
-    const user = this.get(userId);
+    const user = this.getUser(userId);
     if (!user) return null;
 
     const newColor = color || generateUserColor();
@@ -242,7 +247,7 @@ export const requestIsNotFromHost = (
 };
 
 export const isUserAdmin = (userId: string): boolean => {
-  const user = usersManager.get(userId);
+  const user = usersManager.getUser(userId);
   return user?.isAdmin === true;
 };
 

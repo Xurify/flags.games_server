@@ -138,7 +138,6 @@ const server = serve({
     },
     "/ws": {
       async GET(req, server) {
-        console.log('WHORES');
         const upgraded = server.upgrade(req);
         if (!upgraded) {
           return new Response("WebSocket upgrade failed", { status: 400 });

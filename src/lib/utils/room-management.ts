@@ -1,10 +1,11 @@
 import { nanoid } from "nanoid";
 import { Room, User, GameState } from "../../types/multiplayer";
-import { Difficulty } from "../constants";
+import { Difficulty } from "../constants/index";
 import { getDifficultySettings } from "../game-logic/main";
 
 class RoomManager {
   public rooms = new Map<string, Room>();
+  private scheduledDeletions = new Map<string, NodeJS.Timeout>();
 
   create(
     roomId: string,
@@ -49,10 +50,13 @@ class RoomManager {
       gameState,
       members: [host],
       previouslyConnectedMembers: [],
-      maxRoomSize: 5,
       created: new Date().toISOString(),
-      private: false,
-      settings: { ...defaultSettings, ...settings },
+      settings: { 
+        ...defaultSettings, 
+        ...settings,
+        maxRoomSize: 5,
+        private: false,
+      },
     };
 
     this.rooms.set(roomId, room);
@@ -72,7 +76,35 @@ class RoomManager {
   }
 
   delete(roomId: string): boolean {
+    this.cancelScheduledDeletion(roomId);
     return this.rooms.delete(roomId);
+  }
+
+  scheduleDeletion(roomId: string, delayMs: number = 30 * 60 * 1000): void {
+    this.cancelScheduledDeletion(roomId);
+
+    const timeoutId = setTimeout(() => {
+      this.rooms.delete(roomId);
+      this.scheduledDeletions.delete(roomId);
+    }, delayMs);
+
+    this.scheduledDeletions.set(roomId, timeoutId);
+  }
+
+  cancelScheduledDeletion(roomId: string): void {
+    const timeoutId = this.scheduledDeletions.get(roomId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      this.scheduledDeletions.delete(roomId);
+    }
+  }
+
+  isScheduledForDeletion(roomId: string): boolean {
+    return this.scheduledDeletions.has(roomId);
+  }
+
+  getScheduledDeletionCount(): number {
+    return this.scheduledDeletions.size;
   }
 
   update(roomId: string, updates: Partial<Room>): Room | null {
@@ -112,7 +144,7 @@ class RoomManager {
     const room = this.get(roomId);
     if (!room) return null;
 
-    if (room.members.length >= room.maxRoomSize) {
+    if (room.members.length >= room.settings.maxRoomSize) {
       return null;
     }
 
@@ -148,6 +180,7 @@ class RoomManager {
     const updatedMembers = room.members.filter(
       (member) => member.id !== userId
     );
+    
     return this.update(roomId, { members: updatedMembers });
   }
 
@@ -189,7 +222,10 @@ class RoomManager {
 
     return this.update(roomId, {
       passcode,
-      private: passcode !== null,
+      settings: {
+        ...room.settings,
+        private: passcode !== null,
+      },
     });
   }
 
@@ -216,8 +252,8 @@ class RoomManager {
   getPublicRooms(): Room[] {
     return Array.from(this.rooms.values()).filter(
       (room) =>
-        !room.private &&
-        room.members.length < room.maxRoomSize &&
+        !room.settings.private &&
+        room.members.length < room.settings.maxRoomSize &&
         !room.gameState.isActive
     );
   }

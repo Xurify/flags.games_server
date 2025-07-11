@@ -1,6 +1,7 @@
 import { logger } from './logger';
 import { getCorsHeaders } from './security/cors';
 import { metricsCollector } from './metrics';
+import { WS_MESSAGE_TYPES } from '../constants/ws-message-types';
 
 export enum ErrorCode {
   // Client errors (4xx)
@@ -161,7 +162,7 @@ export class ErrorHandler {
 
     try {
       ws.send(JSON.stringify({
-        type: 'ERROR',
+        type: WS_MESSAGE_TYPES.ERROR,
         data: {
           code: appError.code,
           message: appError.message,
