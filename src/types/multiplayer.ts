@@ -12,7 +12,7 @@ export interface User {
   color: string;
   isAdmin: boolean;
   score: number;
-  isReady: boolean;
+
   currentAnswer?: string;
   answerTime?: number;
   lastActiveTime: string;

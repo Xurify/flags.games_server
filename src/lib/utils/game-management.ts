@@ -38,7 +38,7 @@ class GameManager {
     room.members.forEach((member) => {
       usersManager.updateUser(member.id, {
         score: 0,
-        isReady: false,
+
         currentAnswer: undefined,
         answerTime: undefined,
       });

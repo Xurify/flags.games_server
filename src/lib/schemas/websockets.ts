@@ -74,7 +74,7 @@ export const WebSocketMessageSchema = z.discriminatedUnion('type', [
     type: z.enum([
       'LEAVE_ROOM',
       'START_GAME',
-      'TOGGLE_READY',
+
       'PAUSE_GAME',
       'RESUME_GAME',
       'STOP_GAME',

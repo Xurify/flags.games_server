@@ -33,7 +33,6 @@ class UserManager {
       color: generateUserColor(),
       isAdmin: params.isAdmin || false,
       score: 0,
-      isReady: false,
       lastActiveTime: new Date().toISOString(),
     };
 
@@ -88,14 +87,7 @@ class UserManager {
     return updatedUser;
   }
 
-  setUserReady(userId: string, isReady: boolean): User | null {
-    const user = this.getUser(userId);
-    if (!user) return null;
 
-    const updatedUser = { ...user, isReady };
-    this.setUser(userId, updatedUser);
-    return updatedUser;
-  }
 
   resetUserScore(userId: string): User | null {
     const user = this.getUser(userId);
@@ -111,7 +103,6 @@ class UserManager {
     users.forEach((user) => {
       this.updateUser(user.id, {
         score: 0,
-        isReady: false,
         currentAnswer: undefined,
         answerTime: undefined,
       });
@@ -174,14 +165,7 @@ class UserManager {
       .sort((a, b) => b.score - a.score);
   }
 
-  getReadyUsers(roomId: string): User[] {
-    return this.getUsersByRoom(roomId).filter((user) => user.isReady);
-  }
 
-  areAllUsersReady(roomId: string): boolean {
-    const users = this.getUsersByRoom(roomId);
-    return users.length > 0 && users.every((user) => user.isReady);
-  }
 
   getUserStats(userId: string): any {
     const user = this.getUser(userId);
@@ -191,7 +175,6 @@ class UserManager {
       id: user.id,
       username: user.username,
       score: user.score,
-      isReady: user.isReady,
       color: user.color,
       created: user.created,
       lastActive: user.lastActiveTime,

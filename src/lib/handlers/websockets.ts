@@ -218,9 +218,7 @@ export function handleWebSocketMessage(
       case WS_MESSAGE_TYPES.START_GAME:
         handleStartGame(ws);
         break;
-      case WS_MESSAGE_TYPES.TOGGLE_READY:
-        handleToggleReady(ws);
-        break;
+
       case WS_MESSAGE_TYPES.PAUSE_GAME:
         handlePauseGame(ws);
         break;
@@ -495,26 +493,7 @@ function handleSubmitAnswer(ws: ServerWebSocket<WebSocketData>, data: SubmitAnsw
   gameManager.submitAnswer(roomId, userId, data.answer);
 }
 
-function handleToggleReady(ws: ServerWebSocket<WebSocketData>) {
-  const { userId, roomId } = ws.data;
 
-  if (!userId || !roomId) return;
-
-  const user = usersManager.getUser(userId);
-  if (!user) return;
-
-  const updatedUser = usersManager.setUserReady(userId, !user.isReady);
-
-  if (updatedUser) {
-    broadcastToRoom(roomId, {
-      type: WS_MESSAGE_TYPES.USER_READY_CHANGED,
-      data: {
-        userId: userId,
-        isReady: updatedUser.isReady,
-      },
-    });
-  }
-}
 
 function handleUpdateSettings(ws: ServerWebSocket<WebSocketData>, data: UpdateSettingsData) {
   const { userId, roomId } = ws.data;
