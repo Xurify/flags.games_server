@@ -131,31 +131,12 @@ const server = serve({
             activeGames,
             timestamp: new Date().toISOString(),
             metrics: metricsCollector.getMetrics(),
-            cleanup: cleanupService.getStats(),
           }, 200, origin);
         } catch (error) {
           return handleApiError(error, "/api/stats", origin);
         }
       }),
     },
-    // "/api/cleanup": {
-    //   async OPTIONS(req) {
-    //     return handlePreflightRequest(req);
-    //   },
-    //   POST: withMiddleware(async (req) => {
-    //     const origin = req.headers.get('origin');
-    //     try {
-    //       const result = await cleanupService.performManualCleanup();
-    //       return createJsonResponse({
-    //         success: true,
-    //         result,
-    //         timestamp: new Date().toISOString(),
-    //       }, 200, origin);
-    //     } catch (error) {
-    //       return handleApiError(error, "/api/cleanup", origin);
-    //     }
-    //   }),
-    // },
     "/ws": {
       async GET(req, server) {
         const upgraded = server.upgrade(req);
