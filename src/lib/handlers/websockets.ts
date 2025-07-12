@@ -135,33 +135,27 @@ export function handleWebSocketMessage(
       const user = usersManager.getUser(ws.data.userId);
       const users = usersManager.getUsers();
 
-      // Check if user is already in a room and fetch that room
       let room = null;
       if (user && user.roomId && user.roomId !== "") {
         room = roomsManager.get(user.roomId);
-        // Set the websocket roomId to match the user's roomId
         ws.data.roomId = user.roomId;
       } else {
-        // Only try to get room if roomId is actually set on websocket
         room = ws.data?.roomId ? roomsManager.get(ws.data.roomId) : null;
       }
 
-      // Check if user is host of any existing room
       const allRooms = Array.from(roomsManager.rooms.values());
-      const userAsHost = allRooms.find(r => r.host === ws.data.userId);
+      const userAsHost = allRooms.find(room => room.host === ws.data.userId);
       if (userAsHost) {
-        // If user is host but roomId is empty, fix the user's roomId
         if (user && (!user.roomId || user.roomId === "")) {
           usersManager.updateUser(ws.data.userId, { roomId: userAsHost.id });
           room = userAsHost;
           ws.data.roomId = userAsHost.id;
         }
         
-        // Also check if user is host but not in members array
-        const userInMembers = userAsHost.members.find(m => m.id === ws.data.userId);
+        const userInMembers = userAsHost.members.find(member => member.id === ws.data.userId);
         if (!userInMembers && user) {
           roomsManager.addUserToRoom(userAsHost.id, user);
-          room = roomsManager.get(userAsHost.id); // Refresh room data
+          room = roomsManager.get(userAsHost.id);
         }
       }
 

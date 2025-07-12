@@ -130,7 +130,7 @@ class GameManager {
     if (room.gameState.phase !== "question") return;
 
     const existingAnswer = room.gameState.answers.find(
-      (a) => a.userId === userId
+      (answer) => answer.userId === userId
     );
     if (existingAnswer) return;
 

@@ -326,7 +326,7 @@ const generateDistractors = (
     const pool = sortedCandidates
       .slice(poolStart, poolEnd)
       .filter(
-        (c) => !incorrectOptions.find((opt) => opt.code === c.country.code)
+        (c) => !incorrectOptions.find((option) => option.code === c.country.code)
       );
     if (pool.length > 0) {
       const sampled = sampleOne(pool);
@@ -337,7 +337,7 @@ const generateDistractors = (
       const next = sortedCandidates[poolStart + incorrectOptions.length - 2];
       if (
         next &&
-        !incorrectOptions.find((opt) => opt.code === next.country.code)
+        !incorrectOptions.find((option) => option.code === next.country.code)
       ) {
         incorrectOptions.push(next.country);
       } else {
@@ -363,7 +363,7 @@ const generateDistractors = (
         (c) =>
           c.similarityScore >= 30 &&
           c.similarityScore < 60 &&
-          !incorrectOptions.find((opt) => opt.code === c.country.code)
+          !incorrectOptions.find((option) => option.code === c.country.code)
       );
       if (mediumSimilarityCandidates.length > 0) {
         const mediumSimilarityCountry =
@@ -376,7 +376,7 @@ const generateDistractors = (
   }
   while (incorrectOptions.length < 3 && finalCandidates.length > 0) {
     const availableCandidates = finalCandidates.filter(
-      (c) => !incorrectOptions.find((opt) => opt.code === c.country.code)
+      (c) => !incorrectOptions.find((option) => option.code === c.country.code)
     );
     if (availableCandidates.length === 0) break;
     const countries = availableCandidates.map((c) => c.country);
@@ -393,7 +393,7 @@ const generateDistractors = (
     candidateCountries.length > incorrectOptions.length
   ) {
     const remainingCandidates = candidateCountries.filter(
-      (c) => !incorrectOptions.find((opt) => opt.code === c.code)
+      (c) => !incorrectOptions.find((option) => option.code === c.code)
     );
     if (remainingCandidates.length === 0) break;
     const nextCandidate =

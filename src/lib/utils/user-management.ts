@@ -87,8 +87,6 @@ class UserManager {
     return updatedUser;
   }
 
-
-
   resetUserScore(userId: string): User | null {
     const user = this.getUser(userId);
     if (!user) return null;
