@@ -1,16 +1,6 @@
 import { CustomWebSocket, User } from "../../types/multiplayer";
 import { roomsManager } from "./room-management";
 
-const generateUserColor = (): string => {
-  const colors = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-    '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
-    '#F8C471', '#82E0AA', '#F1948A', '#85C1E9', '#D7BDE2',
-    '#AED6F1', '#A9DFBF', '#F9E79F', '#F8BBD9', '#D5A6BD',
-    '#85C1E9', '#F7DC6F', '#BB8FCE', '#98D8C8', '#FFEAA7'
-  ];
-  return colors[Math.floor(Math.random() * colors.length)];
-};
 interface CreateUserParams {
   id: string;
   username: string;
@@ -30,7 +20,6 @@ class UserManager {
       username: params.username,
       roomId: params.roomId,
       created: new Date().toISOString(),
-      color: generateUserColor(),
       isAdmin: params.isAdmin || false,
       score: 0,
       lastActiveTime: new Date().toISOString(),
@@ -149,7 +138,6 @@ class UserManager {
     userId: string;
     username: string;
     score: number;
-    color: string;
   }> {
     const users = this.getUsersByRoom(roomId);
     return users
@@ -157,7 +145,6 @@ class UserManager {
         userId: user.id,
         username: user.username,
         score: user.score,
-        color: user.color,
       }))
       .sort((a, b) => b.score - a.score);
   }
@@ -172,7 +159,6 @@ class UserManager {
       id: user.id,
       username: user.username,
       score: user.score,
-      color: user.color,
       created: user.created,
       lastActive: user.lastActiveTime,
     };
@@ -185,14 +171,6 @@ class UserManager {
     // TODO: Store banned users
     this.removeUserFromRoom(userId);
     return true;
-  }
-
-  changeUserColor(userId: string, color?: string): User | null {
-    const user = this.getUser(userId);
-    if (!user) return null;
-
-    const newColor = color || generateUserColor();
-    return this.updateUser(userId, { color: newColor });
   }
 
   getUsersWithAnswers(roomId: string): User[] {

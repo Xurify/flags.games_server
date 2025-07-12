@@ -9,10 +9,8 @@ export interface User {
   username: string;
   roomId: string;
   created: string;
-  color: string;
   isAdmin: boolean;
   score: number;
-
   currentAnswer?: string;
   answerTime?: number;
   lastActiveTime: string;

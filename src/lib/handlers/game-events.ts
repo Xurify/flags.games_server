@@ -106,7 +106,6 @@ function handleUpdateProfile(ws: CustomWebSocket, data: any) {
         data: { 
           userId: userId,
           username: updatedUser.username,
-          color: updatedUser.color
         }
       }, [userId!]);
     }
