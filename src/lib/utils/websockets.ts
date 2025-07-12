@@ -14,7 +14,7 @@ const heartbeatManager = new HeartbeatManager(
     enableLogging: process.env.NODE_ENV === 'development'
   },
   (userId: string) => {
-    removeConnection(userId);
+    removeConnectionAndUser(userId);
   },
   (userId: string) => {
     usersManager.updateUserActivity(userId);
@@ -33,6 +33,20 @@ export function removeConnection(userId: string) {
   connections.delete(userId);
   usersManager.removeUserConnection(userId);
   heartbeatManager.stopHeartbeat(userId);
+}
+
+export function removeConnectionAndUser(userId: string) {
+  if (!connections.has(userId)) return;
+  
+  connections.delete(userId);
+  usersManager.removeUserConnection(userId);
+  heartbeatManager.stopHeartbeat(userId);
+  
+  const user = usersManager.getUser(userId);
+  if (user && user.roomId) {
+    usersManager.removeUserFromRoom(userId);
+  }
+  usersManager.deleteUser(userId);
 }
 
 export function getConnection(userId: string): CustomWebSocket | undefined {
@@ -169,8 +183,7 @@ export function cleanupDeadConnections() {
   }
 
   deadUserIds.forEach(userId => {
-    removeConnection(userId);
-    usersManager.removeUserFromRoom(userId);
+    removeConnectionAndUser(userId);
   });
 
   return deadUserIds.length;

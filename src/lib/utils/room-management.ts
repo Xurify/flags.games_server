@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { Room, User, GameState } from "../../types/multiplayer";
+import { Room, User, GameState, RoomSettings } from "../../types/multiplayer";
 import { Difficulty } from "../constants/index";
 import { getDifficultySettings } from "../game-logic/main";
 
@@ -10,9 +10,7 @@ class RoomManager {
   create(
     roomId: string,
     host: User,
-    settings: {
-      difficulty: Difficulty;
-    }
+    settings: RoomSettings,
   ): Room {
     const difficultySettings = getDifficultySettings(settings?.difficulty);
 
@@ -22,6 +20,7 @@ class RoomManager {
       timePerQuestion: 30,
       //allowSpectators: true,
       showLeaderboard: true,
+      maxRoomSize: 5,
     };
 
     const gameState: GameState = {
@@ -54,8 +53,7 @@ class RoomManager {
       settings: { 
         ...defaultSettings, 
         ...settings,
-        maxRoomSize: 5,
-        private: false,
+      private: false,
       },
     };
 
@@ -224,7 +222,7 @@ class RoomManager {
       passcode,
       settings: {
         ...room.settings,
-        private: passcode !== null,
+      private: passcode !== null,
       },
     });
   }

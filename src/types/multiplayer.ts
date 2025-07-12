@@ -70,16 +70,21 @@ export interface Room {
   members: User[];
   previouslyConnectedMembers: Array<{ userId: string; username: string }>;
   created: string;
-  settings: {
-    private: boolean;
-    maxRoomSize: number;
-    difficulty: Difficulty;
-    questionCount: number;
-    timePerQuestion: number;
-    //allowSpectators: boolean;
-    showLeaderboard: boolean;
-  };
+  settings: RoomSettings;
 }
+
+export interface RoomSettings {
+  private?: boolean;
+  maxRoomSize: number;
+  difficulty: Difficulty;
+  //questionCount: number;
+  timePerQuestion?: number;
+  //allowSpectators: boolean;
+  showLeaderboard?: boolean;
+  gameMode?: GameMode;
+};
+
+export type GameMode = "classic" | "speed" | "elimination";
 
 interface WebSocketMessageData {
   [key: string]: unknown;

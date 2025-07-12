@@ -3,7 +3,8 @@ import {
   DIFFICULTY_LEVELS,
   VALIDATION_LIMITS,
   REGEX_PATTERNS,
-  INAPPROPRIATE_WORDS
+  INAPPROPRIATE_WORDS,
+  GAME_MODES
 } from '../constants';
 import { InputSanitizer } from './security/input-sanitizer';
 
@@ -25,6 +26,7 @@ export const RoomNameSchema = z
   .transform(InputSanitizer.sanitizeRoomName);
 
 export const DifficultySchema = z.enum(DIFFICULTY_LEVELS);
+export const GameModeSchema = z.enum(GAME_MODES);
 export const UserIdSchema = z.string().min(VALIDATION_LIMITS.USER_ID.MIN).max(VALIDATION_LIMITS.USER_ID.MAX);
 export const InviteCodeSchema = z.string().length(VALIDATION_LIMITS.INVITE_CODE_LENGTH).regex(REGEX_PATTERNS.INVITE_CODE);
 export const PasscodeSchema = z.string().min(VALIDATION_LIMITS.PASSCODE.MIN).max(VALIDATION_LIMITS.PASSCODE.MAX);
@@ -39,6 +41,9 @@ export const RoomSettingsSchema = z.object({
   timePerQuestion: TimePerQuestionSchema.optional(),
   allowSpectators: z.boolean().optional(),
   showLeaderboard: z.boolean().optional(),
+  gameMode: GameModeSchema.optional(),
+  maxRoomSize: z.number().min(2).max(5).optional(),
+  private: z.boolean().optional(),
 }).strict();
 
 const createValidator = <T>(schema: z.ZodSchema<T>) =>

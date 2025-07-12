@@ -2,6 +2,7 @@ import { serve } from "bun";
 import { roomsManager } from "./lib/utils/room-management";
 import { usersManager } from "./lib/utils/user-management";
 import { gameManager } from "./lib/utils/game-management";
+import { cleanupService } from "./lib/utils/cleanup";
 import { handleWebSocketMessage, handleWebSocketOpen, handleWebSocketClose } from "./lib/handlers/websockets";
 import { getCorsHeaders, handlePreflightRequest } from "./lib/utils/security/cors";
 //import { RateLimiter } from "./lib/utils/security/rate-limiter";
@@ -130,12 +131,31 @@ const server = serve({
             activeGames,
             timestamp: new Date().toISOString(),
             metrics: metricsCollector.getMetrics(),
+            cleanup: cleanupService.getStats(),
           }, 200, origin);
         } catch (error) {
           return handleApiError(error, "/api/stats", origin);
         }
       }),
     },
+    // "/api/cleanup": {
+    //   async OPTIONS(req) {
+    //     return handlePreflightRequest(req);
+    //   },
+    //   POST: withMiddleware(async (req) => {
+    //     const origin = req.headers.get('origin');
+    //     try {
+    //       const result = await cleanupService.performManualCleanup();
+    //       return createJsonResponse({
+    //         success: true,
+    //         result,
+    //         timestamp: new Date().toISOString(),
+    //       }, 200, origin);
+    //     } catch (error) {
+    //       return handleApiError(error, "/api/cleanup", origin);
+    //     }
+    //   }),
+    // },
     "/ws": {
       async GET(req, server) {
         const upgraded = server.upgrade(req);
@@ -162,6 +182,20 @@ const server = serve({
     perMessageDeflate: true,
   },
   development: isDevelopment,
+});
+
+cleanupService.start();
+
+process.on('SIGINT', () => {
+  logger.info('Received SIGINT, shutting down gracefully...');
+  cleanupService.stop();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  logger.info('Received SIGTERM, shutting down gracefully...');
+  cleanupService.stop();
+  process.exit(0);
 });
 
 logger.info(`🚩 flags.games WebSocket server running on ${server.url}`); 

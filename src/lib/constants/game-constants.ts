@@ -5,6 +5,8 @@ export type Difficulty = "easy" | "medium" | "hard" | "expert";
 
 export const DIFFICULTY_LEVELS = ["easy", "medium", "hard", "expert"] as const;
 
+export const GAME_MODES = ["classic", "speed", "elimination"] as const;
+
 export const DEFAULT_DIFFICULTY: Difficulty = "easy";
 export const MEDIUM_DIFFICULTY: Difficulty = "medium";
 export const HARD_DIFFICULTY: Difficulty = "hard";
@@ -17,7 +19,7 @@ export const VALIDATION_LIMITS = {
   PASSCODE: { MIN: 4, MAX: 20 },
   ANSWER: { MIN: 1, MAX: 100 },
   INVITE_CODE_LENGTH: 6,
-  QUESTION_COUNT: { MIN: 5, MAX: 50 },
+  QUESTION_COUNT: { MIN: 15, MAX: 197 },
   TIME_PER_QUESTION: { MIN: 10, MAX: 60 },
   ROOM_SIZE: { MIN: 2, MAX: 5 }
 } as const;

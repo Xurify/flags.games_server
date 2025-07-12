@@ -7,6 +7,7 @@ import {
   broadcastToUser,
   addConnection,
   removeConnection,
+  removeConnectionAndUser,
   handleHeartbeatResponse,
 } from "../utils/websockets";
 import { WebSocketData, Room } from "../../types/multiplayer";
@@ -257,8 +258,6 @@ function handleUserDisconnect(userId: string) {
     logger.info("User leaving room on disconnect", { userId, roomId: user.roomId });
     
     const updatedRoom = roomsManager.removeUserFromRoom(user.roomId, userId);
-
-    usersManager.updateUser(userId, { roomId: "" });
     
     if (user.roomId && updatedRoom) {
       const room = roomsManager.get(user.roomId);
@@ -287,6 +286,8 @@ function handleUserDisconnect(userId: string) {
       }
     }
   }
+  
+  removeConnectionAndUser(userId);
 }
 
 function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: JoinRoomData) {
@@ -395,7 +396,9 @@ function handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: CreateRoomDa
   }
 
   const room = roomsManager.create(roomId, updatedUser, {
-    difficulty: (settings?.difficulty || DEFAULT_DIFFICULTY)
+    difficulty: settings?.difficulty || DEFAULT_DIFFICULTY,
+    maxRoomSize: settings?.maxRoomSize || 5,
+    timePerQuestion: settings?.timePerQuestion,
   });
 
   ws.data.roomId = roomId;
@@ -418,7 +421,6 @@ function handleLeaveRoom(ws: ServerWebSocket<WebSocketData>) {
   if (!room) return;
 
   const updatedRoom = roomsManager.removeUserFromRoom(roomId, userId);
-  usersManager.removeUserFromRoom(userId);
 
   if (room.host === userId && updatedRoom && updatedRoom.members.length > 0) {
     const newHost = updatedRoom.members[0];
@@ -449,7 +451,7 @@ function handleLeaveRoom(ws: ServerWebSocket<WebSocketData>) {
   ws.data.roomId = null;
   ws.data.isAdmin = false;
 
-  removeConnection(userId);
+  removeConnectionAndUser(userId);
 }
 
 function handleStartGame(ws: ServerWebSocket<WebSocketData>) {
@@ -559,8 +561,7 @@ function handleKickUser(ws: ServerWebSocket<WebSocketData>, data: KickUserData) 
       data: { reason: "Kicked by host" },
     });
 
-    usersManager.removeUserFromRoom(data.userId);
-    removeConnection(data.userId);
+    removeConnectionAndUser(data.userId);
   }
 }
 
