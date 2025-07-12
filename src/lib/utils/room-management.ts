@@ -14,15 +14,6 @@ class RoomManager {
   ): Room {
     const difficultySettings = getDifficultySettings(settings?.difficulty);
 
-    const defaultSettings = {
-      difficulty: settings.difficulty as Difficulty,
-      questionCount: difficultySettings.count,
-      timePerQuestion: 30,
-      //allowSpectators: true,
-      showLeaderboard: true,
-      maxRoomSize: 5,
-    };
-
     const gameState: GameState = {
       isActive: false,
       isPaused: false,
@@ -50,10 +41,14 @@ class RoomManager {
       members: [host],
       previouslyConnectedMembers: [],
       created: new Date().toISOString(),
-      settings: { 
-        ...defaultSettings, 
+      settings: {
+        ...{
+          questionCount: difficultySettings.count,
+          //allowSpectators: true,
+          showLeaderboard: true,
+        },
         ...settings,
-      private: false,
+        private: false,
       },
     };
 
@@ -107,7 +102,7 @@ class RoomManager {
 
   update(roomId: string, updates: Partial<Room>): Room | null {
     const room = this.get(roomId);
-    if (!room) return null; 
+    if (!room) return null;
 
     const updatedRoom = { ...room, ...updates };
     this.set(roomId, { ...room, ...updates });
@@ -178,7 +173,7 @@ class RoomManager {
     const updatedMembers = room.members.filter(
       (member) => member.id !== userId
     );
-    
+
     return this.update(roomId, { members: updatedMembers });
   }
 
@@ -222,7 +217,7 @@ class RoomManager {
       passcode,
       settings: {
         ...room.settings,
-      private: passcode !== null,
+        private: passcode !== null,
       },
     });
   }

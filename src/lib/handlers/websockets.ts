@@ -398,7 +398,7 @@ function handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: CreateRoomDa
   const room = roomsManager.create(roomId, updatedUser, {
     difficulty: settings?.difficulty || DEFAULT_DIFFICULTY,
     maxRoomSize: settings?.maxRoomSize || 5,
-    timePerQuestion: settings?.timePerQuestion,
+    timePerQuestion: settings?.timePerQuestion || 30,
   });
 
   ws.data.roomId = roomId;

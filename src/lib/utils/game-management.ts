@@ -1,4 +1,4 @@
-import { generateQuestion } from "../game-logic/main";
+import { generateQuestion, getDifficultySettings } from "../game-logic/main";
 import { roomsManager } from "./room-management";
 import { usersManager } from "./user-management";
 import {
@@ -25,7 +25,7 @@ class GameManager {
       currentQuestion: null,
       answers: [],
       currentQuestionIndex: 0,
-      totalQuestions: room.settings.questionCount,
+      totalQuestions: getDifficultySettings(room.settings.difficulty).count,
       difficulty: room.settings.difficulty,
       gameStartTime: Date.now(),
       gameEndTime: null,
