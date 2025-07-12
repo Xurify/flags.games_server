@@ -117,7 +117,6 @@ class UserManager {
     const user = this.getUser(userId);
     if (user) {
       roomsManager.removeUserFromRoom(user.roomId, userId);
-      // Clear the user's roomId instead of deleting the user entirely
       this.updateUser(userId, { roomId: "" });
     }
   }
@@ -184,7 +183,6 @@ class UserManager {
     if (!user) return false;
 
     // TODO: Store banned users
-    // For now, we'll just remove them
     this.removeUserFromRoom(userId);
     return true;
   }

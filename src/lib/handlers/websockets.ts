@@ -32,22 +32,11 @@ export function handleWebSocketOpen(ws: ServerWebSocket<WebSocketData>) {
   logger.info("WebSocket connection opened");
 
   ws.data = {
-    //userId: nanoid(),
     userId: null,
     roomId: null,
     isAdmin: false,
     authenticated: false,
   };
-
-  // ws.send(
-  //   JSON.stringify({
-  //     type: WS_MESSAGE_TYPES.CONNECTION_ESTABLISHED,
-  //     data: {
-  //       userId: ws.data.userId,
-  //       timestamp: Date.now(),
-  //     },
-  //   })
-  // );
 }
 
 export function handleWebSocketMessage(
@@ -120,20 +109,21 @@ export function handleWebSocketMessage(
       ws.data.userId = token;
       ws.data.authenticated = true;
 
-      if (!usersManager.getUser(ws.data.userId)) {
-        usersManager.createUser({
-          id: ws.data.userId,
-          username: "",
-          roomId: "",
-          socketId: nanoid(),
-          isAdmin: ws.data.isAdmin,
-        });
+      if (usersManager.getUser(ws.data.userId)) {
+        usersManager.deleteUser(ws.data.userId);
       }
+
+      usersManager.createUser({
+        id: ws.data.userId,
+        username: "",
+        roomId: "",
+        socketId: nanoid(),
+        isAdmin: ws.data.isAdmin,
+      });
 
       addConnection(ws.data.userId, ws);
 
       const user = usersManager.getUser(ws.data.userId);
-      const users = usersManager.getUsers();
 
       let room = null;
       if (user && user.roomId && user.roomId !== "") {
@@ -276,7 +266,7 @@ function handleUserDisconnect(userId: string) {
 
       if (updatedRoom.members.length === 0) {
         gameManager.stopGame(user.roomId);
-        roomsManager.scheduleDeletion(user.roomId, 30 * 60 * 1000); // 30 minutes
+        roomsManager.delete(user.roomId);
       }
     }
   }
@@ -335,7 +325,6 @@ function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: JoinRoomData) 
 
   //addConnection(userId, ws);
 
-  // Cancel scheduled deletion if the room was empty and scheduled for deletion
   if (roomsManager.isScheduledForDeletion(room.id)) {
     roomsManager.cancelScheduledDeletion(room.id);
   }
@@ -437,8 +426,7 @@ function handleLeaveRoom(ws: ServerWebSocket<WebSocketData>) {
 
   if (updatedRoom && updatedRoom.members.length === 0) {
     gameManager.stopGame(roomId);
-    // Schedule room deletion after 30 minutes instead of immediate deletion
-    roomsManager.scheduleDeletion(roomId, 30 * 60 * 1000); // 30 minutes
+    roomsManager.delete(roomId);
   }
 
   ws.data.userId = null;

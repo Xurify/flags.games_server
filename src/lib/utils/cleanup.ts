@@ -46,9 +46,10 @@ class CleanupService {
       return;
     }
 
-    logger.info('Starting cleanup service...');
+    logger.info('Starting cleanup service with interval:', this.config.interval, 'ms');
     this.isRunning = true;
     this.timerId = setInterval(() => {
+      logger.debug('Cleanup timer triggered at:', new Date().toISOString());
       this.performCleanup().catch(error => {
         console.error('Cleanup failed:', error);
       });
@@ -69,6 +70,7 @@ class CleanupService {
 
   private async performCleanup(): Promise<CleanupResult> {
     const startTime = Date.now();
+    logger.debug('Starting cleanup cycle at:', new Date().toISOString());
 
     try {
       const [removedUsers, removedRooms] = await Promise.all([
@@ -107,7 +109,10 @@ class CleanupService {
     logger.info(`Removing ${inactiveUsers.length} inactive users`);
     
     for (const user of inactiveUsers) {
-      usersManager.removeUserFromRoom(user.id);
+      if (user.roomId) {
+        usersManager.removeUserFromRoom(user.id);
+      }
+      usersManager.deleteUser(user.id);
     }
 
     return inactiveUsers.length;

@@ -19,7 +19,6 @@ export enum ErrorCode {
   CONFIGURATION_ERROR = 'CONFIGURATION_ERROR',
   
   // WebSocket specific errors
-  WEBSOCKET_CONNECTION_ERROR = 'WEBSOCKET_CONNECTION_ERROR',
   WEBSOCKET_MESSAGE_ERROR = 'WEBSOCKET_MESSAGE_ERROR',
   
   // Game specific errors
