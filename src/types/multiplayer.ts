@@ -68,7 +68,6 @@ export interface Room {
   passcode: string | null;
   gameState: GameState;
   members: User[];
-  previouslyConnectedMembers: Array<{ userId: string; username: string }>;
   created: string;
   settings: RoomSettings;
 }

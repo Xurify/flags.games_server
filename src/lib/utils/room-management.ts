@@ -39,7 +39,6 @@ class RoomManager {
       passcode: null,
       gameState,
       members: [host],
-      previouslyConnectedMembers: [],
       created: new Date().toISOString(),
       settings: {
         ...{
@@ -121,17 +120,7 @@ class RoomManager {
     );
   }
 
-  getPreviouslyConnectedUser(
-    userId: string,
-    roomId: string
-  ): { userId: string; username: string } | undefined {
-    const room = this.get(roomId);
-    if (!room) return undefined;
 
-    return room.previouslyConnectedMembers.find(
-      (member) => member.userId === userId
-    );
-  }
 
   addUserToRoom(roomId: string, user: User): Room | null {
     const room = this.get(roomId);
@@ -147,23 +136,7 @@ class RoomManager {
     }
 
     const updatedMembers = [...room.members, user];
-    const updatedRoom = this.update(roomId, { members: updatedMembers });
-
-    const wasConnectedBefore = room.previouslyConnectedMembers.find(
-      (member) => member.userId === user.id
-    );
-
-    if (!wasConnectedBefore) {
-      const updatedPreviouslyConnected = [
-        ...room.previouslyConnectedMembers,
-        { userId: user.id, username: user.username },
-      ];
-      return this.update(roomId, {
-        previouslyConnectedMembers: updatedPreviouslyConnected,
-      });
-    }
-
-    return updatedRoom;
+    return this.update(roomId, { members: updatedMembers });
   }
 
   removeUserFromRoom(roomId: string, userId: string): Room | null {
