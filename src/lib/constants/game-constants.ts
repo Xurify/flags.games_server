@@ -16,7 +16,6 @@ export const VALIDATION_LIMITS = {
   USERNAME: { MIN: 2, MAX: 20 },
   ROOM_NAME: { MIN: 3, MAX: 50 },
   USER_ID: { MIN: 1, MAX: 50 },
-  PASSCODE: { MIN: 4, MAX: 20 },
   ANSWER: { MIN: 1, MAX: 100 },
   INVITE_CODE_LENGTH: 6,
   QUESTION_COUNT: { MIN: 15, MAX: 197 },

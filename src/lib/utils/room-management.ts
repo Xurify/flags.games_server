@@ -36,7 +36,6 @@ class RoomManager {
       name: "",
       host: host.id,
       inviteCode: nanoid(6).toUpperCase(),
-      passcode: null,
       gameState,
       members: [host],
       created: new Date().toISOString(),
@@ -47,7 +46,6 @@ class RoomManager {
           showLeaderboard: true,
         },
         ...settings,
-        private: false,
       },
     };
 
@@ -180,19 +178,6 @@ class RoomManager {
     return this.update(roomId, { settings: updatedSettings });
   }
 
-  setRoomPasscode(roomId: string, passcode: string | null): Room | null {
-    const room = this.get(roomId);
-    if (!room) return null;
-
-    return this.update(roomId, {
-      passcode,
-      settings: {
-        ...room.settings,
-        private: passcode !== null,
-      },
-    });
-  }
-
   getActiveRooms(): Room[] {
     return Array.from(this.rooms.values()).filter(
       (room) => room.members.length > 0
@@ -211,24 +196,6 @@ class RoomManager {
       const roomCreated = new Date(room.created);
       return roomCreated < cutoffTime && room.members.length === 0;
     });
-  }
-
-  getPublicRooms(): Room[] {
-    return Array.from(this.rooms.values()).filter(
-      (room) =>
-        !room.settings.private &&
-        room.members.length < room.settings.maxRoomSize &&
-        !room.gameState.isActive
-    );
-  }
-
-  searchRooms(query: string): Room[] {
-    const lowercaseQuery = query.toLowerCase();
-    return Array.from(this.rooms.values()).filter(
-      (room) =>
-        room.name.toLowerCase().includes(lowercaseQuery) ||
-        room.inviteCode.toLowerCase().includes(lowercaseQuery)
-    );
   }
 }
 

@@ -29,7 +29,6 @@ export const DifficultySchema = z.enum(DIFFICULTY_LEVELS);
 export const GameModeSchema = z.enum(GAME_MODES);
 export const UserIdSchema = z.string().min(VALIDATION_LIMITS.USER_ID.MIN).max(VALIDATION_LIMITS.USER_ID.MAX);
 export const InviteCodeSchema = z.string().length(VALIDATION_LIMITS.INVITE_CODE_LENGTH).regex(REGEX_PATTERNS.INVITE_CODE);
-export const PasscodeSchema = z.string().min(VALIDATION_LIMITS.PASSCODE.MIN).max(VALIDATION_LIMITS.PASSCODE.MAX);
 export const AnswerSchema = z.string().min(VALIDATION_LIMITS.ANSWER.MIN).max(VALIDATION_LIMITS.ANSWER.MAX).transform(InputSanitizer.sanitizeString);
 
 export const QuestionCountSchema = z.number().min(VALIDATION_LIMITS.QUESTION_COUNT.MIN).max(VALIDATION_LIMITS.QUESTION_COUNT.MAX);
@@ -43,7 +42,6 @@ export const RoomSettingsSchema = z.object({
   showLeaderboard: z.boolean().optional(),
   gameMode: GameModeSchema.optional(),
   maxRoomSize: z.number().min(2).max(5).optional(),
-  private: z.boolean().optional(),
 }).strict();
 
 const createValidator = <T>(schema: z.ZodSchema<T>) =>
@@ -59,7 +57,6 @@ export const validateRoomName = createValidator(RoomNameSchema);
 export const validateDifficulty = createValidator(DifficultySchema);
 export const validateRoomSettings = createValidator(RoomSettingsSchema);
 export const validateInviteCode = createValidator(InviteCodeSchema);
-export const validatePasscode = createValidator(PasscodeSchema);
 export const validateUserId = createValidator(UserIdSchema);
 
 export const safeValidate = <T>(schema: z.ZodSchema<T>, data: unknown) => {

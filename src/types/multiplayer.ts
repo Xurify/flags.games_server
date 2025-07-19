@@ -61,7 +61,6 @@ export interface GameState {
 }
 
 export interface RoomSettings {
-  private?: boolean;
   maxRoomSize: number;
   difficulty: Difficulty;
   //questionCount: number;
@@ -78,12 +77,9 @@ export interface Room {
   name: string;
   host: string;
   inviteCode: string;
-  passcode: string | null;
   gameState: GameState;
   members: User[];
-  maxRoomSize: number;
   created: string;
-  private: boolean;
   settings: RoomSettings;
 }
 
@@ -159,7 +155,6 @@ export interface JoinRoomData {
   inviteCode: string;
   username: string;
   userId: string;
-  passcode?: string;
 }
 
 export interface SubmitAnswerData {
