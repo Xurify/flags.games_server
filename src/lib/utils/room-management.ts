@@ -120,8 +120,6 @@ class RoomManager {
     );
   }
 
-
-
   addUserToRoom(roomId: string, user: User): Room | null {
     const room = this.get(roomId);
     if (!room) return null;

@@ -4,9 +4,9 @@ import { gameManager } from './game-management';
 import { logger } from './logger';
 
 interface CleanupConfig {
-  interval: number;
-  inactiveUserTimeout: number;
-  emptyRoomTimeout: number;
+  interval: number; // milliseconds
+  inactiveUserTimeout: number; // seconds
+  emptyRoomTimeout: number; // minutes
 }
 
 interface CleanupStats {
@@ -28,7 +28,7 @@ interface CleanupResult {
 const DEFAULT_CONFIG: CleanupConfig = {
   interval: 5 * 60 * 1000, // 5 minutes
   inactiveUserTimeout: 5 * 60, // 5 minutes
-  emptyRoomTimeout: 5 * 60, // 10 minutes
+  emptyRoomTimeout: 5, // 5 minutes
 };
 
 class CleanupService {
