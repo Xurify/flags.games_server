@@ -22,7 +22,6 @@ export interface GameQuestion {
   correctAnswer: string;
   startTime: number;
   endTime: number;
-  timeLimit: number;
 }
 
 export interface GameAnswer {
@@ -63,8 +62,7 @@ export interface GameState {
 export interface RoomSettings {
   maxRoomSize: number;
   difficulty: Difficulty;
-  //questionCount: number;
-  timePerQuestion?: number;
+  timePerQuestion: number;
   //allowSpectators: boolean;
   showLeaderboard?: boolean;
   gameMode?: GameMode;
