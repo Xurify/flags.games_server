@@ -13,7 +13,7 @@ export const HARD_DIFFICULTY: Difficulty = "hard";
 export const EXPERT_DIFFICULTY: Difficulty = "expert";
 
 export const VALIDATION_LIMITS = {
-  USERNAME: { MIN: 2, MAX: 20 },
+  USERNAME: { MIN: 2, MAX: 30 },
   ROOM_NAME: { MIN: 3, MAX: 50 },
   USER_ID: { MIN: 1, MAX: 50 },
   ANSWER: { MIN: 1, MAX: 100 },

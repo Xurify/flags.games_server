@@ -143,7 +143,6 @@ export const WS_MESSAGE_TYPES = {
 
 export type WSMessageType = (typeof WS_MESSAGE_TYPES)[keyof typeof WS_MESSAGE_TYPES];
 
-
 export interface CreateRoomData {
   username: string;
   userId: string;

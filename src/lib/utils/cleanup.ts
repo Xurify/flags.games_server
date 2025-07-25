@@ -68,7 +68,7 @@ class CleanupService {
     logger.info('Cleanup service stopped');
   }
 
-  private async performCleanup(): Promise<CleanupResult> {
+  public async performCleanup(): Promise<CleanupResult> {
     const startTime = Date.now();
     logger.debug('Starting cleanup cycle at:', new Date().toISOString());
 
@@ -163,10 +163,6 @@ class CleanupService {
       this.stop();
       this.start();
     }
-  }
-
-  async performManualCleanup(): Promise<CleanupResult> {
-    return this.performCleanup();
   }
 
   get isActive(): boolean {
