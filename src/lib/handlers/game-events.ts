@@ -3,8 +3,6 @@ import { usersManager } from "../utils/user-management";
 import { gameManager } from "../utils/game-management";
 import { broadcastToRoom } from "../utils/websockets";
 import { CustomWebSocket } from "../../types/multiplayer";
-import { validateUsername } from "../utils/validation";
-import { ErrorHandler } from "../utils/error-handler";
 import { logger } from "../utils/logger";
 import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
 
@@ -20,10 +18,6 @@ export function handleGameSpecificEvents(ws: CustomWebSocket, type: string, data
 
     case WS_MESSAGE_TYPES.REACTION:
       handleReaction(ws, data);
-      break;
-      
-    case WS_MESSAGE_TYPES.UPDATE_PROFILE:
-      handleUpdateProfile(ws, data);
       break;
       
     default:
@@ -67,47 +61,4 @@ function handleReaction(ws: CustomWebSocket, data: any) {
       timestamp: Date.now()
     }
   });
-}
-
-function handleUpdateProfile(ws: CustomWebSocket, data: any) {
-  const { userId } = ws.data;
-  const { color, username } = data;
-  const user = usersManager.getUser(userId!);
-  
-  if (!user) return;
-
-  let updates: any = {};
-  
-  if (color) {
-    updates.color = color;
-  }
-  
-  if (username) {
-    const validation = validateUsername(username);
-    if (!validation.valid) {
-      const error = ErrorHandler.createValidationError(validation.error || "Invalid username");
-      ErrorHandler.handleWebSocketError(ws, error, "profile_update");
-      return;
-    }
-    updates.username = username;
-  }
-
-  const updatedUser = usersManager.updateUser(userId!, updates);
-  
-  if (updatedUser) {
-    ws.send(JSON.stringify({
-      type: WS_MESSAGE_TYPES.PROFILE_UPDATED,
-      data: { user: updatedUser }
-    }));
-    
-    if (username) {
-      broadcastToRoom(user.roomId, {
-        type: WS_MESSAGE_TYPES.USER_PROFILE_UPDATED,
-        data: { 
-          userId: userId,
-          username: updatedUser.username,
-        }
-      }, [userId!]);
-    }
-  }
 }

@@ -133,8 +133,6 @@ export const WS_MESSAGE_TYPES = {
   HEARTBEAT: "HEARTBEAT",
   QUESTION_SKIPPED: "QUESTION_SKIPPED",
   USER_REACTION: "USER_REACTION",
-  PROFILE_UPDATED: "PROFILE_UPDATED",
-  USER_PROFILE_UPDATED: "USER_PROFILE_UPDATED",
   USER_READY_CHANGED: "USER_READY_CHANGED",
   CONNECTION_ESTABLISHED: "CONNECTION_ESTABLISHED",
 } as const;
@@ -240,15 +238,6 @@ export interface UserReactionData {
   timestamp: number;
 }
 
-export interface ProfileUpdatedData {
-  user: User;
-}
-
-export interface UserProfileUpdatedData {
-  userId: string;
-  username: string;
-}
-
 export interface UserReadyChangedData {
   userId: string;
   isReady: boolean;
@@ -283,8 +272,6 @@ export type ServerToClientMessage =
   | { type: typeof WS_MESSAGE_TYPES.SETTINGS_UPDATED; data: SettingsUpdatedData }
   | { type: typeof WS_MESSAGE_TYPES.QUESTION_SKIPPED; data: QuestionSkippedData }
   | { type: typeof WS_MESSAGE_TYPES.USER_REACTION; data: UserReactionData }
-  | { type: typeof WS_MESSAGE_TYPES.PROFILE_UPDATED; data: ProfileUpdatedData }
-  | { type: typeof WS_MESSAGE_TYPES.USER_PROFILE_UPDATED; data: UserProfileUpdatedData }
   | { type: typeof WS_MESSAGE_TYPES.USER_READY_CHANGED; data: UserReadyChangedData }
   | { type: typeof WS_MESSAGE_TYPES.CONNECTION_ESTABLISHED; data: ConnectionEstablishedData }
   | { type: typeof WS_MESSAGE_TYPES.ERROR; data: ErrorData }
