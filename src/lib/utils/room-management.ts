@@ -43,7 +43,7 @@ class RoomManager {
         ...{
           questionCount: difficultySettings.count,
           //allowSpectators: true,
-          showLeaderboard: true,
+          showLeaderboard: false,
         },
         ...settings,
       },

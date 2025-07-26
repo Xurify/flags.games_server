@@ -12,10 +12,6 @@ export function handleGameSpecificEvents(ws: CustomWebSocket, type: string, data
   if (!userId || !roomId) return;
 
   switch (type) {      
-    case WS_MESSAGE_TYPES.SKIP_QUESTION:
-      handleSkipQuestion(ws);
-      break;
-
     case WS_MESSAGE_TYPES.REACTION:
       handleReaction(ws, data);
       break;
@@ -23,22 +19,6 @@ export function handleGameSpecificEvents(ws: CustomWebSocket, type: string, data
     default:
       logger.warn('Unknown game event type:', type);
   }
-}
-
-function handleSkipQuestion(ws: CustomWebSocket) {
-  const { userId, roomId } = ws.data;
-  const room = roomsManager.get(roomId!);
-  
-  if (!room || room.host !== userId) return;
-
-  if (!room.gameState.isActive) return;
-
-  broadcastToRoom(roomId!, {
-    type: WS_MESSAGE_TYPES.QUESTION_SKIPPED,
-    data: { skippedBy: userId }
-  });
-
-  gameManager.nextQuestion(roomId!);
 }
 
 function handleReaction(ws: CustomWebSocket, data: any) {

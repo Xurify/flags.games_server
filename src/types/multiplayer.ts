@@ -110,7 +110,6 @@ export const WS_MESSAGE_TYPES = {
   RESUME_GAME: "RESUME_GAME",
   STOP_GAME: "STOP_GAME",
   HEARTBEAT_RESPONSE: "HEARTBEAT_RESPONSE",
-  SKIP_QUESTION: "SKIP_QUESTION",
   REACTION: "REACTION",
   UPDATE_PROFILE: "UPDATE_PROFILE",
   TOGGLE_READY: "TOGGLE_READY",
@@ -131,7 +130,6 @@ export const WS_MESSAGE_TYPES = {
   SETTINGS_UPDATED: "SETTINGS_UPDATED",
   ERROR: "ERROR",
   HEARTBEAT: "HEARTBEAT",
-  QUESTION_SKIPPED: "QUESTION_SKIPPED",
   USER_REACTION: "USER_REACTION",
   USER_READY_CHANGED: "USER_READY_CHANGED",
   CONNECTION_ESTABLISHED: "CONNECTION_ESTABLISHED",
@@ -226,10 +224,6 @@ export interface SettingsUpdatedData {
   settings: RoomSettings;
 }
 
-export interface QuestionSkippedData {
-  skippedBy: string;
-}
-
 export interface UserReactionData {
   fromUserId: string;
   fromUsername: string;
@@ -270,7 +264,6 @@ export type ServerToClientMessage =
   | { type: typeof WS_MESSAGE_TYPES.GAME_RESUMED; data: {} }
   | { type: typeof WS_MESSAGE_TYPES.GAME_STOPPED; data: {} }
   | { type: typeof WS_MESSAGE_TYPES.SETTINGS_UPDATED; data: SettingsUpdatedData }
-  | { type: typeof WS_MESSAGE_TYPES.QUESTION_SKIPPED; data: QuestionSkippedData }
   | { type: typeof WS_MESSAGE_TYPES.USER_REACTION; data: UserReactionData }
   | { type: typeof WS_MESSAGE_TYPES.USER_READY_CHANGED; data: UserReadyChangedData }
   | { type: typeof WS_MESSAGE_TYPES.CONNECTION_ESTABLISHED; data: ConnectionEstablishedData }
