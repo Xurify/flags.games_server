@@ -1,6 +1,6 @@
 import { ServerWebSocket } from "bun";
 import { Country } from "../lib/game-logic/data/countries";
-import { Difficulty } from "../lib/constants";
+import { Difficulty, WS_MESSAGE_TYPES } from "../lib/constants";
 
 export interface User {
   id: string;
@@ -95,45 +95,6 @@ export interface WebSocketData {
   isAdmin: boolean;
   authenticated: boolean;
 }
-
-export const WS_MESSAGE_TYPES = {
-  AUTH: "AUTH",
-  AUTH_SUCCESS: "AUTH_SUCCESS",
-  SUBMIT_ANSWER: "SUBMIT_ANSWER",
-  START_GAME: "START_GAME",
-  JOIN_ROOM: "JOIN_ROOM",
-  CREATE_ROOM: "CREATE_ROOM",
-  UPDATE_SETTINGS: "UPDATE_SETTINGS",
-  KICK_USER: "KICK_USER",
-  LEAVE_ROOM: "LEAVE_ROOM",
-  PAUSE_GAME: "PAUSE_GAME",
-  RESUME_GAME: "RESUME_GAME",
-  STOP_GAME: "STOP_GAME",
-  HEARTBEAT_RESPONSE: "HEARTBEAT_RESPONSE",
-  REACTION: "REACTION",
-  UPDATE_PROFILE: "UPDATE_PROFILE",
-  TOGGLE_READY: "TOGGLE_READY",
-  JOIN_ROOM_SUCCESS: "JOIN_ROOM_SUCCESS",
-  CREATE_ROOM_SUCCESS: "CREATE_ROOM_SUCCESS",
-  USER_JOINED: "USER_JOINED",
-  USER_LEFT: "USER_LEFT",
-  HOST_CHANGED: "HOST_CHANGED",
-  KICKED: "KICKED",
-  GAME_STARTING: "GAME_STARTING",
-  NEW_QUESTION: "NEW_QUESTION",
-  ANSWER_SUBMITTED: "ANSWER_SUBMITTED",
-  QUESTION_RESULTS: "QUESTION_RESULTS",
-  GAME_ENDED: "GAME_ENDED",
-  GAME_PAUSED: "GAME_PAUSED",
-  GAME_RESUMED: "GAME_RESUMED",
-  GAME_STOPPED: "GAME_STOPPED",
-  SETTINGS_UPDATED: "SETTINGS_UPDATED",
-  ERROR: "ERROR",
-  HEARTBEAT: "HEARTBEAT",
-  USER_REACTION: "USER_REACTION",
-  USER_READY_CHANGED: "USER_READY_CHANGED",
-  CONNECTION_ESTABLISHED: "CONNECTION_ESTABLISHED",
-} as const;
 
 export type WSMessageType = (typeof WS_MESSAGE_TYPES)[keyof typeof WS_MESSAGE_TYPES];
 
@@ -232,15 +193,6 @@ export interface UserReactionData {
   timestamp: number;
 }
 
-export interface UserReadyChangedData {
-  userId: string;
-  isReady: boolean;
-}
-
-export interface ConnectionEstablishedData {
-  timestamp: number;
-}
-
 export interface ErrorData {
   message: string;
   code?: string;
@@ -265,7 +217,5 @@ export type ServerToClientMessage =
   | { type: typeof WS_MESSAGE_TYPES.GAME_STOPPED; data: {} }
   | { type: typeof WS_MESSAGE_TYPES.SETTINGS_UPDATED; data: SettingsUpdatedData }
   | { type: typeof WS_MESSAGE_TYPES.USER_REACTION; data: UserReactionData }
-  | { type: typeof WS_MESSAGE_TYPES.USER_READY_CHANGED; data: UserReadyChangedData }
-  | { type: typeof WS_MESSAGE_TYPES.CONNECTION_ESTABLISHED; data: ConnectionEstablishedData }
   | { type: typeof WS_MESSAGE_TYPES.ERROR; data: ErrorData }
   | { type: typeof WS_MESSAGE_TYPES.HEARTBEAT; data: {} };

@@ -26,7 +26,7 @@ export const VALIDATION_LIMITS = {
 export const REGEX_PATTERNS = {
   USERNAME: /^[a-zA-Z0-9\s\-_\.]+$/,
   ROOM_NAME: /^[a-zA-Z0-9\s\-_\.!]+$/,
-  INVITE_CODE: /^[A-Z0-9]{6}$/,
+  INVITE_CODE: /^[a-zA-Z0-9\-_]+$/,
 } as const;
 
 export const INAPPROPRIATE_WORDS = [

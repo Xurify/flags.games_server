@@ -28,7 +28,7 @@ export const RoomNameSchema = z
 export const DifficultySchema = z.enum(DIFFICULTY_LEVELS);
 export const GameModeSchema = z.enum(GAME_MODES);
 export const UserIdSchema = z.string().min(VALIDATION_LIMITS.USER_ID.MIN).max(VALIDATION_LIMITS.USER_ID.MAX);
-export const InviteCodeSchema = z.string().length(VALIDATION_LIMITS.INVITE_CODE_LENGTH).regex(REGEX_PATTERNS.INVITE_CODE);
+export const InviteCodeSchema = z.string().length(VALIDATION_LIMITS.INVITE_CODE_LENGTH);
 export const AnswerSchema = z.string().min(VALIDATION_LIMITS.ANSWER.MIN).max(VALIDATION_LIMITS.ANSWER.MAX).transform(InputSanitizer.sanitizeString);
 
 export const QuestionCountSchema = z.number().min(VALIDATION_LIMITS.QUESTION_COUNT.MIN).max(VALIDATION_LIMITS.QUESTION_COUNT.MAX);

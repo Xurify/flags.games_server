@@ -112,10 +112,8 @@ class RoomManager {
     );
   }
 
-  getRoomById(id: string): Room | undefined {
-    return Array.from(this.rooms.values()).find(
-      (room) => room.id === id
-    );
+  getRoomById(roomId: string): Room | undefined {
+    return this.rooms.get(roomId);
   }
 
   addUserToRoom(roomId: string, user: User): Room | null {

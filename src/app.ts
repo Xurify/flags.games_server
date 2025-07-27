@@ -1,4 +1,4 @@
-import { serve } from "bun";
+import { BunRequest, serve } from "bun";
 import { roomsManager } from "./lib/utils/room-management";
 import { usersManager } from "./lib/utils/user-management";
 import { gameManager } from "./lib/utils/game-management";
@@ -41,7 +41,7 @@ const handleApiError = (error: unknown, endpoint: string, origin: string | null 
 //const rateLimitMiddleware = RateLimiter.createMiddleware('api');
 const requestValidationMiddleware = RequestValidator.createMiddleware();
 
-const withMiddleware = (handler: (req: Request) => Promise<Response>) => {
+const withMiddleware = <T extends Request = Request>(handler: (req: T) => Promise<Response>) => {
   return ErrorHandler.asyncHandler(async (req: Request) => {
     //const rateLimitResponse = rateLimitMiddleware(req);
     // if (rateLimitResponse) {
@@ -53,7 +53,7 @@ const withMiddleware = (handler: (req: Request) => Promise<Response>) => {
       return validationResult.response;
     }
 
-    return handler(req);
+    return handler(req as T);
   });
 };
 
@@ -91,6 +91,20 @@ const server = serve({
         } catch (error) {
           return handleApiError(error, "/api/rooms", origin);
         }
+      }),
+    },
+    "/api/rooms/:inviteCode": {
+      async OPTIONS(req) {
+        return handlePreflightRequest(req);
+      },
+      GET: withMiddleware(async (req: BunRequest & { params: { inviteCode: string } }) => {
+        const origin = req.headers.get('origin');
+        const inviteCode = req.params.inviteCode;
+        const room = roomsManager.getRoomByInviteCode(inviteCode);
+        if (!room) {
+          return createJsonResponse({ error: "Room not found" }, 404, origin);
+        }
+        return createJsonResponse({ data: room }, 200, origin);
       }),
     },
     "/api/users": {
