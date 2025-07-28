@@ -38,9 +38,7 @@ import {
   SettingsUpdatedData,
   ErrorData,
 } from "../schemas/websockets";
-import { User, RoomSettings } from "../../types/entities";
 
-// Mapped type for automatic type inference
 export interface MessageDataTypes {
   [WS_MESSAGE_TYPES.GAME_STARTING]: GameStartingData;
   [WS_MESSAGE_TYPES.NEW_QUESTION]: NewQuestionData;
@@ -268,7 +266,7 @@ export function handleWebSocketOpen(ws: ServerWebSocket<WebSocketData>) {
   };
 }
 
-export function handleWebSocketMessage(
+export async function handleWebSocketMessage(
   ws: ServerWebSocket<WebSocketData>,
   message: string | Buffer
 ) {
@@ -409,6 +407,7 @@ export function handleWebSocketMessage(
     }
 
     const data = validation.data;
+    const { userId, roomId } = ws.data;
 
     switch (data.type) {
       case WS_MESSAGE_TYPES.JOIN_ROOM:
@@ -418,7 +417,8 @@ export function handleWebSocketMessage(
         handleCreateRoom(ws, data.data);
         break;
       case WS_MESSAGE_TYPES.SUBMIT_ANSWER:
-        handleSubmitAnswer(ws, data.data);
+        if (!userId || !roomId) return;
+        gameManager.submitAnswer(roomId, userId, data.data.answer);
         break;
       case WS_MESSAGE_TYPES.UPDATE_SETTINGS:
         handleUpdateSettings(ws, data.data);
@@ -430,20 +430,45 @@ export function handleWebSocketMessage(
         handleLeaveRoom(ws);
         break;
       case WS_MESSAGE_TYPES.START_GAME:
-        handleStartGame(ws);
+        if (!userId || !roomId) return;
+        
+        const success = await gameManager.startGame(roomId, userId);
+        if (!success) {
+          const error = ErrorHandler.createPermissionError("Cannot start game - check permissions and player count");
+          ErrorHandler.handleWebSocketError(ws, error, "start_game");
+        }
         break;
 
       case WS_MESSAGE_TYPES.PAUSE_GAME:
-        handlePauseGame(ws);
+        if (!userId || !roomId) return;
+        
+        const pauseRoom = roomsManager.get(roomId);
+        if (!pauseRoom || pauseRoom.host !== userId) return;
+        
+        gameManager.pauseGame(roomId);
         break;
+        
       case WS_MESSAGE_TYPES.RESUME_GAME:
-        handleResumeGame(ws);
+        if (!userId || !roomId) return;
+        
+        const resumeRoom = roomsManager.get(roomId);
+        if (!resumeRoom || resumeRoom.host !== userId) return;
+        
+        gameManager.resumeGame(roomId);
         break;
+        
       case WS_MESSAGE_TYPES.STOP_GAME:
-        handleStopGame(ws);
+        if (!userId || !roomId) return;
+        
+        const stopRoom = roomsManager.get(roomId);
+        if (!stopRoom || stopRoom.host !== userId) return;
+        
+        gameManager.stopGame(roomId);
         break;
       case WS_MESSAGE_TYPES.HEARTBEAT_RESPONSE:
-        handleHeartbeatResponseMessage(ws);
+        if (userId) {
+          handleHeartbeatResponse(userId);
+        }
         break;
     }
   } catch (error) {
@@ -665,46 +690,9 @@ function handleLeaveRoom(ws: ServerWebSocket<WebSocketData>) {
   removeConnectionAndUser(userId);
 }
 
-function handleStartGame(ws: ServerWebSocket<WebSocketData>) {
-  const { userId, roomId } = ws.data;
 
-  if (!userId || !roomId) return;
 
-  const room = roomsManager.get(roomId);
-  if (!room || room.host !== userId) {
-    const error = ErrorHandler.createPermissionError("Only the host can start the game");
-    ErrorHandler.handleWebSocketError(ws, error, "start_game");
-    return;
-  }
 
-  if (room.members.length < 2) {
-    const error = new AppError({
-      code: ErrorCode.INVALID_GAME_STATE,
-      message: "Need at least 2 players to start",
-      statusCode: 400
-    });
-    ErrorHandler.handleWebSocketError(ws, error, "start_game");
-    return;
-  }
-
-  const success = gameManager.startGame(roomId);
-
-  if (!success) {
-    const error = new AppError({
-      code: ErrorCode.INTERNAL_ERROR,
-      message: "Failed to start game",
-      statusCode: 500
-    });
-    ErrorHandler.handleWebSocketError(ws, error, "start_game");
-  }
-}
-
-function handleSubmitAnswer(ws: ServerWebSocket<WebSocketData>, data: SubmitAnswerData) {
-  const { userId, roomId } = ws.data;
-  if (!userId || !roomId) return;
-
-  gameManager.submitAnswer(roomId, userId, data.answer);
-}
 
 
 
@@ -725,38 +713,7 @@ function handleUpdateSettings(ws: ServerWebSocket<WebSocketData>, data: UpdateSe
   });
 }
 
-function handlePauseGame(ws: ServerWebSocket<WebSocketData>) {
-  const { userId, roomId } = ws.data;
 
-  if (!userId || !roomId) return;
-
-  const room = roomsManager.get(roomId);
-  if (!room || room.host !== userId) return;
-
-  gameManager.pauseGame(roomId);
-}
-
-function handleResumeGame(ws: ServerWebSocket<WebSocketData>) {
-  const { userId, roomId } = ws.data;
-
-  if (!userId || !roomId) return;
-
-  const room = roomsManager.get(roomId);
-  if (!room || room.host !== userId) return;
-
-  gameManager.resumeGame(roomId);
-}
-
-function handleStopGame(ws: ServerWebSocket<WebSocketData>) {
-  const { userId, roomId } = ws.data;
-
-  if (!userId || !roomId) return;
-
-  const room = roomsManager.get(roomId);
-  if (!room || room.host !== userId) return;
-
-  gameManager.stopGame(roomId);
-}
 
 function handleKickUser(ws: ServerWebSocket<WebSocketData>, data: KickUserData) {
   const { userId, roomId } = ws.data;
@@ -776,10 +733,3 @@ function handleKickUser(ws: ServerWebSocket<WebSocketData>, data: KickUserData) 
   }
 }
 
-function handleHeartbeatResponseMessage(ws: ServerWebSocket<WebSocketData>) {
-  const { userId } = ws.data;
-
-  if (userId) {
-    handleHeartbeatResponse(userId);
-  }
-}

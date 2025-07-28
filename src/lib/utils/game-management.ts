@@ -15,9 +15,13 @@ class GameManager {
   private questionTimers = new Map<string, Timer>();
   private resultTimers = new Map<string, Timer>();
 
-  async startGame(roomId: string): Promise<boolean> {
+  async startGame(roomId: string, userId: string): Promise<boolean> {
     const room = roomsManager.get(roomId);
-    if (!room || room.gameState.isActive) return false;
+    if (!room) return false;
+    
+    if (room.host !== userId) return false;
+    if (room.gameState.isActive) return false;
+    if (room.members.length < 2) return false;
 
     const gameState: GameState = {
       isActive: true,
