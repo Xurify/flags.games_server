@@ -53,12 +53,12 @@ class GameManager {
 
     broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.GAME_STARTING,
-      data: { countdown: 3 },
+      data: { countdown: 5 },
     });
 
     setTimeout(() => {
       this.nextQuestion(roomId);
-    }, 3000);
+    }, 5000);
 
     return true;
   }
