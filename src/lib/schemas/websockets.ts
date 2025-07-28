@@ -5,7 +5,9 @@ import {
   RoomNameSchema,
   AnswerSchema,
   InviteCodeSchema,
-  RoomSettingsSchema
+  RoomSettingsSchema,
+  DifficultySchema,
+  GameModeSchema
 } from '../utils/validation';
 
 const BaseMessageSchema = z.object({
@@ -14,11 +16,10 @@ const BaseMessageSchema = z.object({
   timestamp: z.number().optional(),
 });
 
-// TODO: Might implement randomized room name in the future
-
+// Client-to-server message data schemas
 export const CreateRoomDataSchema = z.object({
   username: UsernameSchema,
-  //roomName: RoomNameSchema,
+  //roomName: RoomNameSchema, // TODO: Might implement randomized room name in the future
   settings: RoomSettingsSchema.partial().optional(),
 });
 
@@ -45,7 +46,153 @@ export const AuthDataSchema = z.object({
   adminToken: z.string().optional(),
 });
 
+export const UserSchema = z.object({
+  id: UserIdSchema,
+  socketId: z.string(),
+  username: UsernameSchema,
+  roomId: z.string(),
+  created: z.string(),
+  isAdmin: z.boolean(),
+  score: z.number(),
+  currentAnswer: z.string().optional(),
+  answerTime: z.number().optional(),
+  lastActiveTime: z.string(),
+});
+
+export const GameQuestionSchema = z.object({
+  questionNumber: z.number(),
+  country: z.object({
+    name: z.string(),
+    flag: z.string(),
+    code: z.string(),
+  }),
+  options: z.array(z.object({
+    name: z.string(),
+    flag: z.string(),
+    code: z.string(),
+  })),
+  correctAnswer: z.string(),
+  startTime: z.number(),
+  endTime: z.number(),
+});
+
+export const GameAnswerSchema = z.object({
+  userId: UserIdSchema,
+  username: UsernameSchema,
+  answer: AnswerSchema,
+  timeToAnswer: z.number(),
+  isCorrect: z.boolean(),
+  pointsAwarded: z.number(),
+  timestamp: z.number(),
+});
+
+export const GameStateLeaderboardSchema = z.object({
+  userId: UserIdSchema,
+  username: UsernameSchema,
+  score: z.number(),
+  correctAnswers: z.number(),
+  averageTime: z.number(),
+});
+
+export const GameStateSchema = z.object({
+  isActive: z.boolean(),
+  isPaused: z.boolean(),
+  phase: z.enum(["waiting", "starting", "question", "results", "finished"]),
+  currentQuestion: GameQuestionSchema.nullable(),
+  answers: z.array(GameAnswerSchema),
+  currentQuestionIndex: z.number(),
+  totalQuestions: z.number(),
+  difficulty: DifficultySchema,
+  gameStartTime: z.number().nullable(),
+  gameEndTime: z.number().nullable(),
+  usedCountries: z.array(z.string()),
+  questionTimer: z.any().nullable(), // Timer object
+  resultTimer: z.any().nullable(), // Timer object
+  leaderboard: z.array(GameStateLeaderboardSchema),
+});
+
+export const RoomSchema = z.object({
+  id: z.string(),
+  name: RoomNameSchema,
+  host: UserIdSchema,
+  inviteCode: InviteCodeSchema,
+  gameState: GameStateSchema,
+  members: z.array(UserSchema),
+  created: z.string(),
+  settings: RoomSettingsSchema,
+});
+
+export const AuthSuccessDataSchema = z.object({
+  userId: UserIdSchema,
+  isAdmin: z.boolean(),
+  user: UserSchema,
+  room: RoomSchema,
+});
+
+export const RoomSuccessDataSchema = z.object({
+  room: RoomSchema,
+  user: UserSchema,
+});
+
+export const UserJoinedDataSchema = z.object({
+  user: UserSchema,
+  room: RoomSchema,
+});
+
+export const UserLeftDataSchema = z.object({
+  userId: UserIdSchema,
+  room: RoomSchema.nullable(),
+});
+
+export const HostChangedDataSchema = z.object({
+  newHost: UserSchema,
+});
+
+export const KickedDataSchema = z.object({
+  reason: z.string(),
+});
+
+export const GameStartingDataSchema = z.object({
+  gameState: GameStateSchema,
+});
+
+export const NewQuestionDataSchema = z.object({
+  question: GameQuestionSchema,
+});
+
+export const AnswerSubmittedDataSchema = z.object({
+  userId: UserIdSchema,
+  username: UsernameSchema,
+  answer: AnswerSchema,
+  isCorrect: z.boolean(),
+  timeToAnswer: z.number(),
+  pointsAwarded: z.number(),
+});
+
+export const QuestionResultsDataSchema = z.object({
+  playerAnswers: z.array(GameAnswerSchema),
+  leaderboard: z.array(GameStateLeaderboardSchema),
+});
+
+export const GameEndedDataSchema = z.object({
+  leaderboard: z.array(GameStateLeaderboardSchema),
+});
+
+export const SettingsUpdatedDataSchema = z.object({
+  settings: RoomSettingsSchema,
+});
+
+
+
+export const ErrorDataSchema = z.object({
+  message: z.string(),
+  code: z.string().optional(),
+  details: z.any().optional(),
+});
+
+// WebSocket Message Schema with all possible types
 export const WebSocketMessageSchema = z.discriminatedUnion('type', [
+  // Client-to-server messages
   BaseMessageSchema.extend({
     type: z.literal('AUTH'),
     data: AuthDataSchema,
@@ -74,11 +221,78 @@ export const WebSocketMessageSchema = z.discriminatedUnion('type', [
     type: z.enum([
       'LEAVE_ROOM',
       'START_GAME',
-
       'PAUSE_GAME',
       'RESUME_GAME',
       'STOP_GAME',
       'HEARTBEAT_RESPONSE'
+    ]),
+    data: z.record(z.unknown()).optional(),
+  }),
+  
+  // Server-to-client messages
+  BaseMessageSchema.extend({
+    type: z.literal('AUTH_SUCCESS'),
+    data: AuthSuccessDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('CREATE_ROOM_SUCCESS'),
+    data: RoomSuccessDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('JOIN_ROOM_SUCCESS'),
+    data: RoomSuccessDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('USER_JOINED'),
+    data: UserJoinedDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('USER_LEFT'),
+    data: UserLeftDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('HOST_CHANGED'),
+    data: HostChangedDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('KICKED'),
+    data: KickedDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('GAME_STARTING'),
+    data: GameStartingDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('NEW_QUESTION'),
+    data: NewQuestionDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('ANSWER_SUBMITTED'),
+    data: AnswerSubmittedDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('QUESTION_RESULTS'),
+    data: QuestionResultsDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('GAME_ENDED'),
+    data: GameEndedDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('SETTINGS_UPDATED'),
+    data: SettingsUpdatedDataSchema,
+  }),
+
+  BaseMessageSchema.extend({
+    type: z.literal('ERROR'),
+    data: ErrorDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.enum([
+      'GAME_PAUSED',
+      'GAME_RESUMED',
+      'GAME_STOPPED',
+      'HEARTBEAT'
     ]),
     data: z.record(z.unknown()).optional(),
   }),
@@ -89,4 +303,25 @@ export type JoinRoomData = z.infer<typeof JoinRoomDataSchema>;
 export type SubmitAnswerData = z.infer<typeof SubmitAnswerDataSchema>;
 export type UpdateSettingsData = z.infer<typeof UpdateSettingsDataSchema>;
 export type KickUserData = z.infer<typeof KickUserDataSchema>;
+export type AuthData = z.infer<typeof AuthDataSchema>;
+export type User = z.infer<typeof UserSchema>;
+export type GameQuestion = z.infer<typeof GameQuestionSchema>;
+export type GameAnswer = z.infer<typeof GameAnswerSchema>;
+export type GameStateLeaderboard = z.infer<typeof GameStateLeaderboardSchema>;
+export type GameState = z.infer<typeof GameStateSchema>;
+export type Room = z.infer<typeof RoomSchema>;
+export type AuthSuccessData = z.infer<typeof AuthSuccessDataSchema>;
+export type RoomSuccessData = z.infer<typeof RoomSuccessDataSchema>;
+export type UserJoinedData = z.infer<typeof UserJoinedDataSchema>;
+export type UserLeftData = z.infer<typeof UserLeftDataSchema>;
+export type HostChangedData = z.infer<typeof HostChangedDataSchema>;
+export type KickedData = z.infer<typeof KickedDataSchema>;
+export type GameStartingData = z.infer<typeof GameStartingDataSchema>;
+export type NewQuestionData = z.infer<typeof NewQuestionDataSchema>;
+export type AnswerSubmittedData = z.infer<typeof AnswerSubmittedDataSchema>;
+export type QuestionResultsData = z.infer<typeof QuestionResultsDataSchema>;
+export type GameEndedData = z.infer<typeof GameEndedDataSchema>;
+export type SettingsUpdatedData = z.infer<typeof SettingsUpdatedDataSchema>;
+
+export type ErrorData = z.infer<typeof ErrorDataSchema>;
 export type WebSocketMessage = z.infer<typeof WebSocketMessageSchema>;

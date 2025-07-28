@@ -184,13 +184,7 @@ export interface SettingsUpdatedData {
   settings: RoomSettings;
 }
 
-export interface UserReactionData {
-  fromUserId: string;
-  fromUsername: string;
-  targetUserId?: string;
-  reaction: string;
-  timestamp: number;
-}
+
 
 export interface ErrorData {
   message: string;
@@ -215,6 +209,6 @@ export type ServerToClientMessage =
   | { type: typeof WS_MESSAGE_TYPES.GAME_RESUMED; data: {} }
   | { type: typeof WS_MESSAGE_TYPES.GAME_STOPPED; data: {} }
   | { type: typeof WS_MESSAGE_TYPES.SETTINGS_UPDATED; data: SettingsUpdatedData }
-  | { type: typeof WS_MESSAGE_TYPES.USER_REACTION; data: UserReactionData }
+
   | { type: typeof WS_MESSAGE_TYPES.ERROR; data: ErrorData }
   | { type: typeof WS_MESSAGE_TYPES.HEARTBEAT; data: {} };
