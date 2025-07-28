@@ -49,7 +49,6 @@ class CleanupService {
     logger.info('Starting cleanup service with interval:', this.config.interval, 'ms');
     this.isRunning = true;
     this.timerId = setInterval(() => {
-      logger.debug('Cleanup timer triggered at:', new Date().toISOString());
       this.performCleanup().catch(error => {
         console.error('Cleanup failed:', error);
       });
@@ -139,30 +138,6 @@ class CleanupService {
     }
 
     return emptyRooms.length;
-  }
-
-  getStats(): CleanupStats {
-    return {
-      totalUsers: usersManager.getLength(),
-      totalRooms: roomsManager.rooms.size,
-      activeRooms: roomsManager.getActiveRooms().length,
-      emptyRooms: roomsManager.getEmptyRooms().length,
-      inactiveUsers: usersManager.getInactiveUsers(
-        this.config.inactiveUserTimeout
-      ).length,
-      scheduledDeletions: roomsManager.getScheduledDeletionCount(),
-      nextCleanup: this.isRunning ? this.config.interval : 0,
-    };
-  }
-
-  updateConfig(newConfig: Partial<CleanupConfig>): void {
-    this.config = { ...this.config, ...newConfig };
-    
-    if (this.isRunning) {
-      logger.info('Restarting cleanup service with new config');
-      this.stop();
-      this.start();
-    }
   }
 
   get isActive(): boolean {

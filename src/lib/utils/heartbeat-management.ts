@@ -199,10 +199,6 @@ export class HeartbeatManager {
     };
   }
 
-  updateConfig(newConfig: Partial<HeartbeatConfig>): void {
-    this.config = { ...this.config, ...newConfig };
-  }
-
   cleanup(): void {
     this.heartbeats.forEach((_, userId) => {
       this.stopHeartbeat(userId);
