@@ -5,7 +5,6 @@ import { gameManager } from "./lib/utils/game-management";
 import { cleanupService } from "./lib/utils/cleanup";
 import { handleWebSocketMessage, handleWebSocketOpen, handleWebSocketClose } from "./lib/handlers/websockets";
 import { getCorsHeaders, handlePreflightRequest } from "./lib/utils/security/cors";
-//import { RateLimiter } from "./lib/utils/security/rate-limiter";
 import { RequestValidator } from "./lib/utils/security/request-validator";
 import { ErrorHandler, AppError, ErrorCode } from "./lib/utils/error-handler";
 import { logger } from "./lib/utils/logger";
@@ -38,16 +37,10 @@ const handleApiError = (error: unknown, endpoint: string, origin: string | null 
   return ErrorHandler.createErrorResponse(appError, origin);
 };
 
-//const rateLimitMiddleware = RateLimiter.createMiddleware('api');
 const requestValidationMiddleware = RequestValidator.createMiddleware();
 
 const withMiddleware = <T extends Request = Request>(handler: (req: T) => Promise<Response>) => {
   return ErrorHandler.asyncHandler(async (req: Request) => {
-    //const rateLimitResponse = rateLimitMiddleware(req);
-    // if (rateLimitResponse) {
-    //   return rateLimitResponse;
-    // }
-
     const validationResult = await requestValidationMiddleware(req);
     if (validationResult.response) {
       return validationResult.response;
