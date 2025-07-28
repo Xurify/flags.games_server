@@ -7,7 +7,6 @@ import {
   InviteCodeSchema,
   RoomSettingsSchema,
   DifficultySchema,
-  GameModeSchema
 } from '../utils/validation';
 
 const BaseMessageSchema = z.object({

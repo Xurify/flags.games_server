@@ -155,7 +155,7 @@ const server = serve({
     },
   },
   websocket: {
-    open: (ws: ServerWebSocket<any>) => {
+    open: (ws: ServerWebSocket<WebSocketData>) => {
       metricsCollector.increment("activeConnections");
       handleWebSocketOpen(ws);
     },

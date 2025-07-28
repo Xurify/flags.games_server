@@ -1,10 +1,11 @@
 import { ServerWebSocket } from "bun";
+import { nanoid } from "nanoid";
+
 import { roomsManager } from "../utils/room-management";
 import { usersManager } from "../utils/user-management";
 import { gameManager } from "../utils/game-management";
 import { WebSocketData, Room, CustomWebSocket, WebSocketMessage } from "../../types/entities";
 import {
-  safeValidate,
   WebSocketMessageSchema,
   type CreateRoomData,
   type JoinRoomData,
@@ -12,7 +13,7 @@ import {
   type UpdateSettingsData,
   type KickUserData,
 } from "../schemas";
-import { nanoid } from "nanoid";
+import { safeValidate } from "../utils/validation";
 import { DEFAULT_DIFFICULTY } from "../constants/game-constants";
 import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
 import { WebSocketSecurity } from "../utils/security/network";

@@ -8,14 +8,6 @@ export {
   QuestionCountSchema,
   TimePerQuestionSchema,
   RoomSettingsSchema,
-  validateUsername,
-  validateRoomName,
-  validateUserId,
-  validateInviteCode,
-  validateDifficulty,
-  validateRoomSettings,
-  safeValidate,
-  sanitizeString
 } from '../utils/validation';
 
 export {
@@ -55,9 +47,3 @@ export {
   type RoomResponse,
   type ErrorResponse
 } from './api-responses';
-
-export {
-  SECURITY_CONFIG,
-  isOriginAllowed,
-  getClientIP
-} from '../config/security';

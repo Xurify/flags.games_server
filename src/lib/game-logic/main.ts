@@ -84,7 +84,7 @@ const isDistinctiveFlag = (countryCode: string): boolean => {
   return DISTINCTIVE_FLAGS.includes(countryCode);
 };
 
-const weightedRandomSelect = (items: any[], weights: number[]) => {
+const weightedRandomSelect = (items: Country[], weights: number[]) => {
   const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
   let random = Math.random() * totalWeight;
 
