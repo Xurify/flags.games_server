@@ -9,7 +9,6 @@ import {
   WebSocketMessageSchema,
   type CreateRoomData,
   type JoinRoomData,
-  type SubmitAnswerData,
   type UpdateSettingsData,
   type KickUserData,
 } from "../schemas";

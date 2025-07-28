@@ -15,7 +15,6 @@ class RoomManager {
 
     const gameState: GameState = {
       isActive: false,
-      isPaused: false,
       phase: "waiting",
       currentQuestion: null,
       answers: [],

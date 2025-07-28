@@ -95,8 +95,7 @@ export const GameStateLeaderboardSchema = z.object({
 
 export const GameStateSchema = z.object({
   isActive: z.boolean(),
-  isPaused: z.boolean(),
-  phase: z.enum(["waiting", "starting", "question", "results", "finished"]),
+  phase: z.enum(["waiting", "starting", "question", "results", "finished", "paused"]),
   currentQuestion: GameQuestionSchema.nullable(),
   answers: z.array(GameAnswerSchema),
   currentQuestionIndex: z.number(),

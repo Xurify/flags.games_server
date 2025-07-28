@@ -25,7 +25,6 @@ class GameManager {
 
     const gameState: GameState = {
       isActive: true,
-      isPaused: false,
       phase: "starting",
       currentQuestion: null,
       answers: [],
@@ -351,7 +350,7 @@ class GameManager {
     if (!room || !room.gameState.isActive) return false;
 
     this.clearTimers(roomId);
-    roomsManager.updateGameState(roomId, { isPaused: true });
+    roomsManager.updateGameState(roomId, { phase: "paused" });
 
     broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.GAME_PAUSED,
@@ -363,17 +362,24 @@ class GameManager {
 
   resumeGame(roomId: string): boolean {
     const room = roomsManager.get(roomId);
-    if (!room || !room.gameState.isActive || !room.gameState.isPaused)
+    if (!room || !room.gameState.isActive || room.gameState.phase !== "paused")
       return false;
 
-    roomsManager.updateGameState(roomId, { isPaused: false });
+    // Determine what phase to resume to based on the previous state
+    let resumePhase: "question" | "results" = "question";
+    if (room.gameState.currentQuestion && room.gameState.answers.length > 0) {
+      // If we have answers, we should resume to results phase
+      resumePhase = "results";
+    }
+
+    roomsManager.updateGameState(roomId, { phase: resumePhase });
 
     broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.GAME_RESUMED,
       data: { timestamp: Date.now() },
     });
 
-    if (room.gameState.phase === "question" && room.gameState.currentQuestion) {
+    if (resumePhase === "question" && room.gameState.currentQuestion) {
       const elapsed = Date.now() - room.gameState.currentQuestion.startTime;
       const remaining = room.settings.timePerQuestion * 1000 - elapsed;
 
@@ -385,6 +391,12 @@ class GameManager {
       } else {
         this.endQuestion(roomId);
       }
+    } else if (resumePhase === "results") {
+      // Resume the results timer
+      const timer = setTimeout(() => {
+        this.nextQuestion(roomId);
+      }, 8000);
+      this.resultTimers.set(roomId, timer);
     }
 
     return true;
@@ -404,7 +416,6 @@ class GameManager {
 
     roomsManager.updateGameState(roomId, {
       isActive: false,
-      isPaused: false,
       phase: "waiting",
       currentQuestion: null,
       gameEndTime: Date.now(),

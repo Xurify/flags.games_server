@@ -44,8 +44,7 @@ export interface GameStateLeaderboard {
 
 export interface GameState {
   isActive: boolean;
-  isPaused: boolean;
-  phase: "waiting" | "starting" | "question" | "results" | "finished";
+  phase: "waiting" | "starting" | "question" | "results" | "finished" | "paused";
   currentQuestion: GameQuestion | null;
   answers: GameAnswer[];
   currentQuestionIndex: number;
