@@ -1,4 +1,4 @@
-import { CustomWebSocket } from "../../../types/multiplayer";
+import { CustomWebSocket } from "../../../types/entities";
 import { InputSanitizer } from "./input-sanitizer";
 import { SECURITY_CONFIG, isOriginAllowed, getClientIP } from "../../config/security";
 

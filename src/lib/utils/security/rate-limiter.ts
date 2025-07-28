@@ -1,6 +1,6 @@
 import { SECURITY_CONFIG, getClientIP } from '../../config/security';
 import { logger } from '../logger';
-import { CustomWebSocket } from '../../../types/multiplayer';
+import { CustomWebSocket } from '../../../types/entities';
 
 interface RateLimitEntry {
   count: number;

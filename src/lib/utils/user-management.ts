@@ -1,4 +1,4 @@
-import { CustomWebSocket, User } from "../../types/multiplayer";
+import { CustomWebSocket, User } from "../../types/entities";
 import { roomsManager } from "./room-management";
 
 interface CreateUserParams {

@@ -12,7 +12,7 @@ import { logger } from "./lib/utils/logger";
 import { ServerWebSocket } from "bun";
 import { metricsCollector } from "./lib/utils/metrics";
 import { env, isDevelopment } from "./lib/utils/env";
-import { WebSocketData } from "./types/multiplayer";
+import { WebSocketData } from "./types/entities";
 
 const createJsonResponse = (data: unknown, status = 200, origin: string | null = null) =>
   new Response(JSON.stringify(data), {

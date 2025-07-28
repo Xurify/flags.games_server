@@ -6,9 +6,9 @@ import {
   GameState,
   GameQuestion,
   GameAnswer,
-} from "../../types/multiplayer";
-import { broadcastToRoom } from "./websockets";
+} from "../../types/entities";
 import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
+import { broadcastToRoom } from "./websockets";
 
 class GameManager {
   private questionTimers = new Map<string, Timer>();

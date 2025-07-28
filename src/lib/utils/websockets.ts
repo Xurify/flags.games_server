@@ -1,6 +1,6 @@
 import { roomsManager } from "./room-management";
 import { usersManager } from "./user-management";
-import { CustomWebSocket, WebSocketMessage } from "../../types/multiplayer";
+import { CustomWebSocket, WebSocketMessage } from "../../types/entities";
 import { HeartbeatManager } from "./heartbeat-management";
 import { logger } from "./logger";
 

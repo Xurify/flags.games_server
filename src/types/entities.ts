@@ -94,9 +94,8 @@ export interface WebSocketData {
   roomId: string | null;
   isAdmin: boolean;
   authenticated: boolean;
+  ipAddress?: string;
 }
-
-export type WSMessageType = (typeof WS_MESSAGE_TYPES)[keyof typeof WS_MESSAGE_TYPES];
 
 export interface CreateRoomData {
   username: string;

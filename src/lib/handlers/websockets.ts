@@ -10,7 +10,7 @@ import {
   removeConnectionAndUser,
   handleHeartbeatResponse,
 } from "../utils/websockets";
-import { WebSocketData, Room } from "../../types/multiplayer";
+import { WebSocketData, Room } from "../../types/entities";
 import {
   safeValidate,
   WebSocketMessageSchema,

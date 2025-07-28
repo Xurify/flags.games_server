@@ -1,5 +1,5 @@
 import { nanoid } from "nanoid";
-import { Room, User, GameState, RoomSettings } from "../../types/multiplayer";
+import { Room, User, GameState, RoomSettings } from "../../types/entities";
 import { Difficulty } from "../constants/index";
 import { getDifficultySettings } from "../game-logic/main";
 
