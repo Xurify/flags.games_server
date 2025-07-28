@@ -8,7 +8,7 @@ import {
   GameAnswer,
 } from "../../types/entities";
 import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
-import { broadcastToRoom } from "./websockets";
+import { broadcastToRoom } from "../handlers/websockets";
 import { QuestionResultsData } from "../schemas/websockets";
 
 class GameManager {
