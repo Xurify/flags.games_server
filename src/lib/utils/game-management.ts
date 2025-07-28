@@ -9,6 +9,7 @@ import {
 } from "../../types/entities";
 import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
 import { broadcastToRoom } from "./websockets";
+import { QuestionResultsData } from "../schemas/websockets";
 
 class GameManager {
   private questionTimers = new Map<string, Timer>();
@@ -102,11 +103,7 @@ class GameManager {
     broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.NEW_QUESTION,
       data: {
-        question: {
-          questionNumber: question.questionNumber,
-          country: question.country,
-          options: question.options,
-        },
+        question: question,
         totalQuestions: gameState.totalQuestions,
       },
     });
@@ -230,7 +227,7 @@ class GameManager {
     });
   }
 
-  private generateResultsData(room: Room) {
+  private generateResultsData(room: Room): QuestionResultsData {
     const question = room.gameState.currentQuestion!;
     const answers = room.gameState.answers;
 
@@ -256,8 +253,8 @@ class GameManager {
             }
             : null;
         })
-        .filter(Boolean)
-        .sort((a, b) => b!.score - a!.score),
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .sort((a, b) => b.score - a.score),
     };
   }
 

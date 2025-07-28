@@ -30,7 +30,15 @@ export {
   type SubmitAnswerData,
   type UpdateSettingsData,
   type KickUserData,
-  type WebSocketMessage
+  type WebSocketMessage,
+  type GameStartingData,
+  type NewQuestionData,
+  type AnswerSubmittedData,
+  type QuestionResultsData,
+  type GameEndedData,
+  type GamePausedData,
+  type GameResumedData,
+  type GameStoppedData
 } from './websockets';
 
 export {

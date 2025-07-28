@@ -3,6 +3,47 @@ import { usersManager } from "./user-management";
 import { CustomWebSocket, WebSocketMessage } from "../../types/entities";
 import { HeartbeatManager } from "./heartbeat-management";
 import { logger } from "./logger";
+import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
+import {
+  GameStartingData,
+  NewQuestionData,
+  AnswerSubmittedData,
+  QuestionResultsData,
+  GameEndedData,
+  GamePausedData,
+  GameResumedData,
+  GameStoppedData,
+  AuthSuccessData,
+  RoomSuccessData,
+  UserJoinedData,
+  UserLeftData,
+  HostChangedData,
+  KickedData,
+  SettingsUpdatedData,
+  ErrorData,
+} from "../schemas/websockets";
+import { User, Room, RoomSettings } from "../../types/entities";
+
+export interface MessageDataTypes {
+  [WS_MESSAGE_TYPES.GAME_STARTING]: GameStartingData;
+  [WS_MESSAGE_TYPES.NEW_QUESTION]: NewQuestionData;
+  [WS_MESSAGE_TYPES.ANSWER_SUBMITTED]: AnswerSubmittedData;
+  [WS_MESSAGE_TYPES.QUESTION_RESULTS]: QuestionResultsData;
+  [WS_MESSAGE_TYPES.GAME_ENDED]: GameEndedData;
+  [WS_MESSAGE_TYPES.GAME_PAUSED]: GamePausedData;
+  [WS_MESSAGE_TYPES.GAME_RESUMED]: GameResumedData;
+  [WS_MESSAGE_TYPES.GAME_STOPPED]: GameStoppedData;
+  [WS_MESSAGE_TYPES.AUTH_SUCCESS]: AuthSuccessData;
+  [WS_MESSAGE_TYPES.CREATE_ROOM_SUCCESS]: RoomSuccessData;
+  [WS_MESSAGE_TYPES.JOIN_ROOM_SUCCESS]: RoomSuccessData;
+  [WS_MESSAGE_TYPES.USER_JOINED]: UserJoinedData;
+  [WS_MESSAGE_TYPES.USER_LEFT]: UserLeftData;
+  [WS_MESSAGE_TYPES.HOST_CHANGED]: HostChangedData;
+  [WS_MESSAGE_TYPES.KICKED]: KickedData;
+  [WS_MESSAGE_TYPES.SETTINGS_UPDATED]: SettingsUpdatedData;
+  [WS_MESSAGE_TYPES.ERROR]: ErrorData;
+  [WS_MESSAGE_TYPES.HEARTBEAT]: {};
+}
 
 const connections = new Map<string, CustomWebSocket>();
 
@@ -57,7 +98,11 @@ function isConnectionValid(ws: CustomWebSocket | undefined): boolean {
   return !!ws && (ws.readyState === WebSocket.OPEN);
 }
 
-export function broadcastToRoom(roomId: string, message: WebSocketMessage, exclude: string[] = []) {
+export function broadcastToRoom<T extends keyof MessageDataTypes>(
+  roomId: string, 
+  message: { type: T; data: MessageDataTypes[T] }, 
+  exclude: string[] = []
+) {
   const room = roomsManager.get(roomId);
   if (!room) return;
 

@@ -105,7 +105,7 @@ export const GameStateSchema = z.object({
   difficulty: DifficultySchema,
   gameStartTime: z.number().nullable(),
   gameEndTime: z.number().nullable(),
-  usedCountries: z.array(z.string()),
+  usedCountries: z.set(z.string()),
   questionTimer: z.any().nullable(), // Timer object
   resultTimer: z.any().nullable(), // Timer object
   leaderboard: z.array(GameStateLeaderboardSchema),
@@ -153,30 +153,70 @@ export const KickedDataSchema = z.object({
 });
 
 export const GameStartingDataSchema = z.object({
-  gameState: GameStateSchema,
+  countdown: z.number(),
 });
 
 export const NewQuestionDataSchema = z.object({
   question: GameQuestionSchema,
+  totalQuestions: z.number(),
 });
 
 export const AnswerSubmittedDataSchema = z.object({
   userId: UserIdSchema,
   username: UsernameSchema,
-  answer: AnswerSchema,
-  isCorrect: z.boolean(),
-  timeToAnswer: z.number(),
-  pointsAwarded: z.number(),
+  hasAnswered: z.boolean(),
+  totalAnswers: z.number(),
+  totalPlayers: z.number(),
 });
 
 export const QuestionResultsDataSchema = z.object({
-  playerAnswers: z.array(GameAnswerSchema),
-  leaderboard: z.array(GameStateLeaderboardSchema),
+  correctAnswer: z.string(),
+  correctCountry: z.object({
+    name: z.string(),
+    flag: z.string(),
+    code: z.string(),
+  }),
+  playerAnswers: z.array(z.object({
+    userId: UserIdSchema,
+    username: UsernameSchema,
+    answer: AnswerSchema,
+    isCorrect: z.boolean(),
+    timeToAnswer: z.number(),
+    pointsAwarded: z.number(),
+  })),
+  leaderboard: z.array(z.object({
+    userId: UserIdSchema,
+    username: UsernameSchema,
+    score: z.number(),
+  })),
 });
 
 export const GameEndedDataSchema = z.object({
   leaderboard: z.array(GameStateLeaderboardSchema),
+  gameStats: z.object({
+    totalQuestions: z.number(),
+    totalAnswers: z.number(),
+    correctAnswers: z.number(),
+    accuracy: z.number(),
+    averageTime: z.number(),
+    difficulty: DifficultySchema,
+    duration: z.number(),
+  }),
 });
+
+export const GamePausedDataSchema = z.object({
+  timestamp: z.number(),
+});
+
+export const GameResumedDataSchema = z.object({
+  timestamp: z.number(),
+});
+
+export const GameStoppedDataSchema = z.object({
+  timestamp: z.number(),
+});
+
+
 
 export const SettingsUpdatedDataSchema = z.object({
   settings: RoomSettingsSchema,
@@ -288,12 +328,19 @@ export const WebSocketMessageSchema = z.discriminatedUnion('type', [
     data: ErrorDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.enum([
-      'GAME_PAUSED',
-      'GAME_RESUMED',
-      'GAME_STOPPED',
-      'HEARTBEAT'
-    ]),
+    type: z.literal('GAME_PAUSED'),
+    data: GamePausedDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('GAME_RESUMED'),
+    data: GameResumedDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('GAME_STOPPED'),
+    data: GameStoppedDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('HEARTBEAT'),
     data: z.record(z.unknown()).optional(),
   }),
 ]);
@@ -322,6 +369,9 @@ export type AnswerSubmittedData = z.infer<typeof AnswerSubmittedDataSchema>;
 export type QuestionResultsData = z.infer<typeof QuestionResultsDataSchema>;
 export type GameEndedData = z.infer<typeof GameEndedDataSchema>;
 export type SettingsUpdatedData = z.infer<typeof SettingsUpdatedDataSchema>;
+export type GamePausedData = z.infer<typeof GamePausedDataSchema>;
+export type GameResumedData = z.infer<typeof GameResumedDataSchema>;
+export type GameStoppedData = z.infer<typeof GameStoppedDataSchema>;
 
 export type ErrorData = z.infer<typeof ErrorDataSchema>;
 export type WebSocketMessage = z.infer<typeof WebSocketMessageSchema>;
