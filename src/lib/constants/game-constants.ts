@@ -12,17 +12,6 @@ export const MEDIUM_DIFFICULTY: Difficulty = "medium";
 export const HARD_DIFFICULTY: Difficulty = "hard";
 export const EXPERT_DIFFICULTY: Difficulty = "expert";
 
-export const VALIDATION_LIMITS = {
-  USERNAME: { MIN: 2, MAX: 30 },
-  ROOM_NAME: { MIN: 3, MAX: 50 },
-  USER_ID: { MIN: 1, MAX: 50 },
-  ANSWER: { MIN: 1, MAX: 100 },
-  INVITE_CODE_LENGTH: 6,
-  QUESTION_COUNT: { MIN: 15, MAX: 197 },
-  TIME_PER_QUESTION: { MIN: 10, MAX: 60 },
-  ROOM_SIZE: { MIN: 2, MAX: 5 }
-} as const;
-
 export const REGEX_PATTERNS = {
   USERNAME: /^[a-zA-Z0-9\s\-_\.]+$/,
   ROOM_NAME: /^[a-zA-Z0-9\s\-_\.!]+$/,

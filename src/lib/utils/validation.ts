@@ -1,20 +1,30 @@
 import { z } from 'zod';
 import {
   DIFFICULTY_LEVELS,
-  VALIDATION_LIMITS,
   REGEX_PATTERNS,
   INAPPROPRIATE_WORDS,
   GAME_MODES
 } from '../constants';
 import { InputSanitizer } from './security/input-sanitizer';
 
+const VALIDATION_LIMITS = {
+  USERNAME: { MIN: 2, MAX: 30 },
+  ROOM_NAME: { MIN: 3, MAX: 50 },
+  USER_ID: { MIN: 32, MAX: 32 },
+  ANSWER: { MIN: 1, MAX: 100 },
+  INVITE_CODE_LENGTH: 6,
+  QUESTION_COUNT: { MIN: 15, MAX: 197 },
+  TIME_PER_QUESTION: { MIN: 10, MAX: 60 },
+  ROOM_SIZE: { MIN: 2, MAX: 5 }
+} as const;
+
 export const UsernameSchema = z
   .string()
   .min(VALIDATION_LIMITS.USERNAME.MIN)
   .max(VALIDATION_LIMITS.USERNAME.MAX)
   .regex(REGEX_PATTERNS.USERNAME)
-  .refine(val => val.trim().length > 0)
-  .refine(val => !INAPPROPRIATE_WORDS.some(word => val.toLowerCase().includes(word)))
+  .refine(value => value.trim().length > 0)
+  .refine(value => !INAPPROPRIATE_WORDS.some(word => value.toLowerCase().includes(word)))
   .transform(InputSanitizer.sanitizeUsername);
 
 export const RoomNameSchema = z
@@ -22,7 +32,7 @@ export const RoomNameSchema = z
   .min(VALIDATION_LIMITS.ROOM_NAME.MIN)
   .max(VALIDATION_LIMITS.ROOM_NAME.MAX)
   .regex(REGEX_PATTERNS.ROOM_NAME)
-  .refine(val => val.trim().length > 0)
+  .refine(value => value.trim().length > 0)
   .transform(InputSanitizer.sanitizeRoomName);
 
 export const DifficultySchema = z.enum(DIFFICULTY_LEVELS);
