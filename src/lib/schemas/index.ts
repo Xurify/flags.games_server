@@ -28,8 +28,6 @@ export {
   type AnswerSubmittedData,
   type QuestionResultsData,
   type GameEndedData,
-  type GamePausedData,
-  type GameResumedData,
   type GameStoppedData
 } from './websockets';
 

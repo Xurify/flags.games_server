@@ -190,7 +190,9 @@ class GameManager {
 
     this.clearTimers(roomId);
 
-    roomsManager.updateGameState(roomId, { phase: "results" });
+    roomsManager.updateGameState(roomId, { 
+      phase: "results",
+    });
 
     const resultsData = this.generateResultsData(room);
 
@@ -343,63 +345,6 @@ class GameManager {
       clearTimeout(resultTimer);
       this.resultTimers.delete(roomId);
     }
-  }
-
-  pauseGame(roomId: string): boolean {
-    const room = roomsManager.get(roomId);
-    if (!room || !room.gameState.isActive) return false;
-
-    this.clearTimers(roomId);
-    roomsManager.updateGameState(roomId, { phase: "paused" });
-
-    broadcastToRoom(roomId, {
-      type: WS_MESSAGE_TYPES.GAME_PAUSED,
-      data: { timestamp: Date.now() },
-    });
-
-    return true;
-  }
-
-  resumeGame(roomId: string): boolean {
-    const room = roomsManager.get(roomId);
-    if (!room || !room.gameState.isActive || room.gameState.phase !== "paused")
-      return false;
-
-    // Determine what phase to resume to based on the previous state
-    let resumePhase: "question" | "results" = "question";
-    if (room.gameState.currentQuestion && room.gameState.answers.length > 0) {
-      // If we have answers, we should resume to results phase
-      resumePhase = "results";
-    }
-
-    roomsManager.updateGameState(roomId, { phase: resumePhase });
-
-    broadcastToRoom(roomId, {
-      type: WS_MESSAGE_TYPES.GAME_RESUMED,
-      data: { timestamp: Date.now() },
-    });
-
-    if (resumePhase === "question" && room.gameState.currentQuestion) {
-      const elapsed = Date.now() - room.gameState.currentQuestion.startTime;
-      const remaining = room.settings.timePerQuestion * 1000 - elapsed;
-
-      if (remaining > 0) {
-        const timer = setTimeout(() => {
-          this.endQuestion(roomId);
-        }, remaining);
-        this.questionTimers.set(roomId, timer);
-      } else {
-        this.endQuestion(roomId);
-      }
-    } else if (resumePhase === "results") {
-      // Resume the results timer
-      const timer = setTimeout(() => {
-        this.nextQuestion(roomId);
-      }, 8000);
-      this.resultTimers.set(roomId, timer);
-    }
-
-    return true;
   }
 
   getActiveGames(): string[] {

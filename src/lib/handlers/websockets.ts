@@ -26,8 +26,6 @@ import {
   AnswerSubmittedData,
   QuestionResultsData,
   GameEndedData,
-  GamePausedData,
-  GameResumedData,
   GameStoppedData,
   AuthSuccessData,
   RoomSuccessData,
@@ -45,8 +43,6 @@ export interface MessageDataTypes {
   [WS_MESSAGE_TYPES.ANSWER_SUBMITTED]: AnswerSubmittedData;
   [WS_MESSAGE_TYPES.QUESTION_RESULTS]: QuestionResultsData;
   [WS_MESSAGE_TYPES.GAME_ENDED]: GameEndedData;
-  [WS_MESSAGE_TYPES.GAME_PAUSED]: GamePausedData;
-  [WS_MESSAGE_TYPES.GAME_RESUMED]: GameResumedData;
   [WS_MESSAGE_TYPES.GAME_STOPPED]: GameStoppedData;
   [WS_MESSAGE_TYPES.AUTH_SUCCESS]: AuthSuccessData;
   [WS_MESSAGE_TYPES.CREATE_ROOM_SUCCESS]: RoomSuccessData;
@@ -439,24 +435,6 @@ export async function handleWebSocketMessage(
         }
         break;
 
-      case WS_MESSAGE_TYPES.PAUSE_GAME:
-        if (!userId || !roomId) return;
-        
-        const pauseRoom = roomsManager.get(roomId);
-        if (!pauseRoom || pauseRoom.host !== userId) return;
-        
-        gameManager.pauseGame(roomId);
-        break;
-        
-      case WS_MESSAGE_TYPES.RESUME_GAME:
-        if (!userId || !roomId) return;
-        
-        const resumeRoom = roomsManager.get(roomId);
-        if (!resumeRoom || resumeRoom.host !== userId) return;
-        
-        gameManager.resumeGame(roomId);
-        break;
-        
       case WS_MESSAGE_TYPES.STOP_GAME:
         if (!userId || !roomId) return;
         

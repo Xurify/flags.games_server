@@ -44,7 +44,7 @@ export interface GameStateLeaderboard {
 
 export interface GameState {
   isActive: boolean;
-  phase: "waiting" | "starting" | "question" | "results" | "finished" | "paused";
+  phase: "waiting" | "starting" | "question" | "results" | "finished";
   currentQuestion: GameQuestion | null;
   answers: GameAnswer[];
   currentQuestionIndex: number;
@@ -204,8 +204,6 @@ export type ServerToClientMessage =
   | { type: typeof WS_MESSAGE_TYPES.ANSWER_SUBMITTED; data: AnswerSubmittedData }
   | { type: typeof WS_MESSAGE_TYPES.QUESTION_RESULTS; data: QuestionResultsData }
   | { type: typeof WS_MESSAGE_TYPES.GAME_ENDED; data: GameEndedData }
-  | { type: typeof WS_MESSAGE_TYPES.GAME_PAUSED; data: {} }
-  | { type: typeof WS_MESSAGE_TYPES.GAME_RESUMED; data: {} }
   | { type: typeof WS_MESSAGE_TYPES.GAME_STOPPED; data: {} }
   | { type: typeof WS_MESSAGE_TYPES.SETTINGS_UPDATED; data: SettingsUpdatedData }
 

@@ -95,7 +95,7 @@ export const GameStateLeaderboardSchema = z.object({
 
 export const GameStateSchema = z.object({
   isActive: z.boolean(),
-  phase: z.enum(["waiting", "starting", "question", "results", "finished", "paused"]),
+  phase: z.enum(["waiting", "starting", "question", "results", "finished"]),
   currentQuestion: GameQuestionSchema.nullable(),
   answers: z.array(GameAnswerSchema),
   currentQuestionIndex: z.number(),
@@ -202,14 +202,6 @@ export const GameEndedDataSchema = z.object({
   }),
 });
 
-export const GamePausedDataSchema = z.object({
-  timestamp: z.number(),
-});
-
-export const GameResumedDataSchema = z.object({
-  timestamp: z.number(),
-});
-
 export const GameStoppedDataSchema = z.object({
   timestamp: z.number(),
 });
@@ -259,8 +251,6 @@ export const WebSocketMessageSchema = z.discriminatedUnion('type', [
     type: z.enum([
       'LEAVE_ROOM',
       'START_GAME',
-      'PAUSE_GAME',
-      'RESUME_GAME',
       'STOP_GAME',
       'HEARTBEAT_RESPONSE'
     ]),
@@ -326,14 +316,6 @@ export const WebSocketMessageSchema = z.discriminatedUnion('type', [
     data: ErrorDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('GAME_PAUSED'),
-    data: GamePausedDataSchema,
-  }),
-  BaseMessageSchema.extend({
-    type: z.literal('GAME_RESUMED'),
-    data: GameResumedDataSchema,
-  }),
-  BaseMessageSchema.extend({
     type: z.literal('GAME_STOPPED'),
     data: GameStoppedDataSchema,
   }),
@@ -367,8 +349,6 @@ export type AnswerSubmittedData = z.infer<typeof AnswerSubmittedDataSchema>;
 export type QuestionResultsData = z.infer<typeof QuestionResultsDataSchema>;
 export type GameEndedData = z.infer<typeof GameEndedDataSchema>;
 export type SettingsUpdatedData = z.infer<typeof SettingsUpdatedDataSchema>;
-export type GamePausedData = z.infer<typeof GamePausedDataSchema>;
-export type GameResumedData = z.infer<typeof GameResumedDataSchema>;
 export type GameStoppedData = z.infer<typeof GameStoppedDataSchema>;
 
 export type ErrorData = z.infer<typeof ErrorDataSchema>;
