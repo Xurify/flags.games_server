@@ -38,7 +38,7 @@ export const RoomNameSchema = z
 export const DifficultySchema = z.enum(DIFFICULTY_LEVELS);
 export const GameModeSchema = z.enum(GAME_MODES);
 export const UserIdSchema = z.uuidv4().min(VALIDATION_LIMITS.USER_ID.MIN).max(VALIDATION_LIMITS.USER_ID.MAX);
-export const InviteCodeSchema = z.nanoid().length(VALIDATION_LIMITS.INVITE_CODE_LENGTH);
+export const InviteCodeSchema = z.string().length(VALIDATION_LIMITS.INVITE_CODE_LENGTH);
 export const AnswerSchema = z.string().min(VALIDATION_LIMITS.ANSWER.MIN).max(VALIDATION_LIMITS.ANSWER.MAX).transform(InputSanitizer.sanitizeString);
 
 export const QuestionCountSchema = z.number().min(VALIDATION_LIMITS.QUESTION_COUNT.MIN).max(VALIDATION_LIMITS.QUESTION_COUNT.MAX);
@@ -74,7 +74,6 @@ export const safeValidate = <T>(schema: z.ZodSchema<T>, data: unknown) => {
   if (result.success) {
     return { success: true as const, data: result.data };
   } else {
-    // Group errors by field and show only the first error per field
     const errorMap = new Map<string, string>();
     for (const e of result.error.issues) {
       const path = e.path.join('.');
