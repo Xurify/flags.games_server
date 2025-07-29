@@ -7,7 +7,7 @@
     "hono": "^4.8.4",
     "isomorphic-dompurify": "^2.26.0",
     "nanoid": "^5.1.5",
-    "zod": "^3.25.76"
+    "zod": "^4.0.10"
   },
   "devDependencies": {
     "@biomejs/biome": "2.0.6",

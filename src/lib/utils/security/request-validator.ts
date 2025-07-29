@@ -124,7 +124,7 @@ export class RequestValidator {
 
       const result = schema.safeParse(body);
       if (!result.success) {
-        const errorMessage = result.error.errors[0]?.message || 'Validation failed';
+        const errorMessage = result.error.issues[0]?.message || 'Validation failed';
         return {
           valid: false,
           error: `Validation error: ${errorMessage}`
@@ -170,7 +170,7 @@ export class RequestValidator {
 
       const result = schema.safeParse(params);
       if (!result.success) {
-        const errorMessage = result.error.errors[0]?.message || 'Query validation failed';
+        const errorMessage = result.error.issues[0]?.message || 'Query validation failed';
         return {
           valid: false,
           error: errorMessage

@@ -11,11 +11,10 @@ import {
 
 const BaseMessageSchema = z.object({
   type: z.string(),
-  data: z.record(z.unknown()),
+  data: z.record(z.string(), z.unknown()),
   timestamp: z.number().optional(),
 });
 
-// Client-to-server message data schemas
 export const CreateRoomDataSchema = z.object({
   username: UsernameSchema,
   //roomName: RoomNameSchema, // TODO: Might implement randomized room name in the future
@@ -254,7 +253,7 @@ export const WebSocketMessageSchema = z.discriminatedUnion('type', [
       'STOP_GAME',
       'HEARTBEAT_RESPONSE'
     ]),
-    data: z.record(z.unknown()).optional(),
+    data: z.record(z.string(), z.unknown()).optional(),
   }),
   
   // Server-to-client messages
@@ -321,7 +320,7 @@ export const WebSocketMessageSchema = z.discriminatedUnion('type', [
   }),
   BaseMessageSchema.extend({
     type: z.literal('HEARTBEAT'),
-    data: z.record(z.unknown()).optional(),
+    data: z.record(z.string(), z.unknown()).optional(),
   }),
 ]);
 

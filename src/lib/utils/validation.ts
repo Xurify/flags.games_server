@@ -27,8 +27,8 @@ export const RoomNameSchema = z
 
 export const DifficultySchema = z.enum(DIFFICULTY_LEVELS);
 export const GameModeSchema = z.enum(GAME_MODES);
-export const UserIdSchema = z.string().min(VALIDATION_LIMITS.USER_ID.MIN).max(VALIDATION_LIMITS.USER_ID.MAX);
-export const InviteCodeSchema = z.string().length(VALIDATION_LIMITS.INVITE_CODE_LENGTH);
+export const UserIdSchema = z.uuidv4().min(VALIDATION_LIMITS.USER_ID.MIN).max(VALIDATION_LIMITS.USER_ID.MAX);
+export const InviteCodeSchema = z.nanoid().length(VALIDATION_LIMITS.INVITE_CODE_LENGTH);
 export const AnswerSchema = z.string().min(VALIDATION_LIMITS.ANSWER.MIN).max(VALIDATION_LIMITS.ANSWER.MAX).transform(InputSanitizer.sanitizeString);
 
 export const QuestionCountSchema = z.number().min(VALIDATION_LIMITS.QUESTION_COUNT.MIN).max(VALIDATION_LIMITS.QUESTION_COUNT.MAX);
@@ -49,7 +49,7 @@ const createValidator = <T>(schema: z.ZodSchema<T>) =>
     const result = schema.safeParse(data);
     return result.success
       ? { valid: true }
-      : { valid: false, error: result.error.errors[0]?.message || 'Validation failed' };
+      : { valid: false, error: result.error.issues[0]?.message || 'Validation failed' };
   };
 
 export const validateUsername = createValidator(UsernameSchema);
@@ -66,7 +66,7 @@ export const safeValidate = <T>(schema: z.ZodSchema<T>, data: unknown) => {
   } else {
     // Group errors by field and show only the first error per field
     const errorMap = new Map<string, string>();
-    for (const e of result.error.errors) {
+    for (const e of result.error.issues) {
       const path = e.path.join('.');
       if (!errorMap.has(path)) {
         errorMap.set(path, e.message);

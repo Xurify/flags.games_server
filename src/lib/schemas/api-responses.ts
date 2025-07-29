@@ -3,16 +3,16 @@ import { z } from 'zod';
 export const HealthResponseSchema = z.object({
   status: z.literal('ok'),
   timestamp: z.string(),
-  metrics: z.record(z.unknown()),
+  metrics: z.record(z.string(), z.unknown()),
 });
 
 export const RoomsResponseSchema = z.object({
-  rooms: z.record(z.unknown()),
+  rooms: z.record(z.string(), z.unknown()),
   count: z.number(),
 });
 
 export const UsersResponseSchema = z.object({
-  users: z.record(z.unknown()),
+  users: z.record(z.string(), z.unknown()),
   count: z.number(),
 });
 
@@ -21,7 +21,7 @@ export const StatsResponseSchema = z.object({
   users: z.number(),
   activeGames: z.number(),
   timestamp: z.string(),
-  metrics: z.record(z.unknown()),
+  metrics: z.record(z.string(), z.unknown()),
 });
 
 export const RoomResponseSchema = z.object({
