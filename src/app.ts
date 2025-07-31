@@ -9,7 +9,6 @@ import { RequestValidator } from "./lib/utils/security/request-validator";
 import { ErrorHandler, AppError, ErrorCode } from "./lib/utils/error-handler";
 import { logger } from "./lib/utils/logger";
 import { ServerWebSocket } from "bun";
-import { metricsCollector } from "./lib/utils/metrics";
 import { env, isDevelopment } from "./lib/utils/env";
 import { WebSocketData } from "./types/entities";
 
@@ -76,7 +75,6 @@ const server = serve({
       GET: withMiddleware(async (req) => {
         const origin = req.headers.get('origin');
         try {
-          metricsCollector.set("activeRooms", roomsManager.rooms.size);
           return createJsonResponse({
             rooms: Object.fromEntries(roomsManager.rooms.entries()),
             count: roomsManager.rooms.size,
@@ -107,7 +105,6 @@ const server = serve({
       GET: withMiddleware(async (req) => {
         const origin = req.headers.get('origin');
         try {
-          metricsCollector.set("activeUsers", usersManager.users.size);
           return createJsonResponse({
             users: Object.fromEntries(usersManager.users.entries()),
             count: usersManager.users.size,
@@ -128,16 +125,11 @@ const server = serve({
           const activeUsers = usersManager.users.size;
           const activeGames = gameManager.getActiveGames().length;
 
-          metricsCollector.set("activeRooms", activeRooms);
-          metricsCollector.set("activeUsers", activeUsers);
-          metricsCollector.set("activeGames", activeGames);
-
           return createJsonResponse({
             rooms: activeRooms,
             users: activeUsers,
             activeGames,
             timestamp: new Date().toISOString(),
-            metrics: metricsCollector.getMetrics(),
           }, 200, origin);
         } catch (error) {
           return handleApiError(error, "/api/stats", origin);
@@ -156,15 +148,12 @@ const server = serve({
   },
   websocket: {
     open: (ws: ServerWebSocket<WebSocketData>) => {
-      metricsCollector.increment("activeConnections");
       handleWebSocketOpen(ws);
     },
     message: (ws: ServerWebSocket<WebSocketData>, message: string | Buffer) => {
-      metricsCollector.increment("totalMessages");
       handleWebSocketMessage(ws, message);
     },
     close: (ws: ServerWebSocket<WebSocketData>) => {
-      metricsCollector.increment("activeConnections", -1);
       handleWebSocketClose(ws);
     },
     perMessageDeflate: true,

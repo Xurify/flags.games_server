@@ -1,6 +1,5 @@
 import { logger } from './logger';
 import { getCorsHeaders } from './security/cors';
-import { metricsCollector } from './metrics';
 import { WS_MESSAGE_TYPES } from '../constants/ws-message-types';
 
 export enum ErrorCode {
@@ -193,19 +192,8 @@ export class ErrorHandler {
   }
 
   private static updateErrorMetrics(error: AppError): void {
-    metricsCollector.increment('errorRate');
-
     const currentCount = this.errorCounts.get(error.code) || 0;
     this.errorCounts.set(error.code, currentCount + 1);
-
-    metricsCollector.set('lastError', error.code);
-    metricsCollector.set('lastErrorTime', error.timestamp);
-
-    if (error.statusCode >= 500) {
-      metricsCollector.increment('serverErrors');
-    } else if (error.statusCode >= 400) {
-      metricsCollector.increment('clientErrors');
-    }
   }
 
   static getErrorStats(): Record<string, any> {
