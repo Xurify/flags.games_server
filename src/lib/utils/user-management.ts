@@ -134,36 +134,6 @@ class UserManager {
     this.userConnections.delete(userId);
   }
 
-  getUserLeaderboard(roomId: string): Array<{
-    userId: string;
-    username: string;
-    score: number;
-  }> {
-    const users = this.getUsersByRoom(roomId);
-    return users
-      .map((user) => ({
-        userId: user.id,
-        username: user.username,
-        score: user.score,
-      }))
-      .sort((a, b) => b.score - a.score);
-  }
-
-
-
-  getUserStats(userId: string): any {
-    const user = this.getUser(userId);
-    if (!user) return null;
-
-    return {
-      id: user.id,
-      username: user.username,
-      score: user.score,
-      created: user.created,
-      lastActive: user.lastActiveTime,
-    };
-  }
-
   banUser(userId: string, reason?: string): boolean {
     const user = this.getUser(userId);
     if (!user) return false;
@@ -171,22 +141,6 @@ class UserManager {
     // TODO: Store banned users
     this.removeUserFromRoom(userId);
     return true;
-  }
-
-  getUsersWithAnswers(roomId: string): User[] {
-    return this.getUsersByRoom(roomId).filter(
-      (user) => user.currentAnswer !== undefined
-    );
-  }
-
-  clearUserAnswers(roomId: string): void {
-    const users = this.getUsersByRoom(roomId);
-    users.forEach((user) => {
-      this.updateUser(user.id, {
-        currentAnswer: undefined,
-        answerTime: undefined,
-      });
-    });
   }
 }
 

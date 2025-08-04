@@ -27,7 +27,7 @@ interface CleanupResult {
 
 const DEFAULT_CONFIG: CleanupConfig = {
   interval: 5 * 60 * 1000, // 5 minutes
-  inactiveUserTimeout: 5 * 60, // 5 minutes
+  inactiveUserTimeout: 5, // 5 minutes
   emptyRoomTimeout: 5, // 5 minutes
 };
 
