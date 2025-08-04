@@ -239,7 +239,7 @@ export const WebSocketMessageSchema = z.discriminatedUnion('type', [
     data: SubmitAnswerDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('UPDATE_SETTINGS'),
+    type: z.literal('UPDATE_ROOM_SETTINGS'),
     data: UpdateSettingsDataSchema,
   }),
   BaseMessageSchema.extend({

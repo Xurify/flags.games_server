@@ -384,8 +384,8 @@ export async function handleWebSocketMessage(
         if (!userId || !roomId) return;
         gameManager.submitAnswer(roomId, userId, data.data.answer);
         break;
-      case WS_MESSAGE_TYPES.UPDATE_SETTINGS:
-        handleUpdateSettings(ws, data.data);
+      case WS_MESSAGE_TYPES.UPDATE_ROOM_SETTINGS:
+        handleUpdateRoomSettings(ws, data.data);
         break;
       case WS_MESSAGE_TYPES.KICK_USER:
         handleKickUser(ws, data.data);
@@ -636,7 +636,7 @@ function handleLeaveRoom(ws: ServerWebSocket<WebSocketData>) {
   removeConnectionAndUser(userId);
 }
 
-function handleUpdateSettings(ws: ServerWebSocket<WebSocketData>, data: UpdateSettingsData) {
+function handleUpdateRoomSettings(ws: ServerWebSocket<WebSocketData>, data: UpdateSettingsData) {
   const { userId, roomId } = ws.data;
   if (!userId || !roomId) return;
 
