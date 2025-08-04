@@ -668,12 +668,6 @@ function handleLeaveRoom(ws: ServerWebSocket<WebSocketData>) {
   removeConnectionAndUser(userId);
 }
 
-
-
-
-
-
-
 function handleUpdateSettings(ws: ServerWebSocket<WebSocketData>, data: UpdateSettingsData) {
   const { userId, roomId } = ws.data;
   if (!userId || !roomId) return;
@@ -690,8 +684,6 @@ function handleUpdateSettings(ws: ServerWebSocket<WebSocketData>, data: UpdateSe
     data: { settings: updatedRoom?.settings },
   });
 }
-
-
 
 function handleKickUser(ws: ServerWebSocket<WebSocketData>, data: KickUserData) {
   const { userId, roomId } = ws.data;
