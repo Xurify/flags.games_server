@@ -81,7 +81,7 @@ export function addConnection(userId: string, ws: CustomWebSocket) {
 
 export function removeConnection(userId: string) {
   if (!connections.has(userId)) return;
-  
+
   connections.delete(userId);
   usersManager.removeUserConnection(userId);
   heartbeatManager.stopHeartbeat(userId);
@@ -89,11 +89,11 @@ export function removeConnection(userId: string) {
 
 export function removeConnectionAndUser(userId: string) {
   if (!connections.has(userId)) return;
-  
+
   connections.delete(userId);
   usersManager.removeUserConnection(userId);
   heartbeatManager.stopHeartbeat(userId);
-  
+
   const user = usersManager.getUser(userId);
   if (user && user.roomId) {
     usersManager.removeUserFromRoom(userId);
@@ -110,8 +110,8 @@ function isConnectionValid(ws: CustomWebSocket | undefined): boolean {
 }
 
 export function broadcastToRoom<T extends keyof MessageDataTypes>(
-  roomId: string, 
-  message: { type: T; data: MessageDataTypes[T] }, 
+  roomId: string,
+  message: { type: T; data: MessageDataTypes[T] },
   exclude: string[] = []
 ) {
   const room = roomsManager.getRoom(roomId);
@@ -173,38 +173,6 @@ export function broadcastToAll(message: WebSocketMessage) {
       }
     }
   });
-}
-
-export function batchBroadcastToUsers(userIds: string[], message: WebSocketMessage) {
-  const messageString = JSON.stringify({
-    ...message,
-    timestamp: Date.now()
-  });
-
-  const failedUserIds: string[] = [];
-
-  userIds.forEach(userId => {
-    const ws = getConnection(userId);
-    if (isConnectionValid(ws)) {
-      try {
-        ws!.send(messageString);
-      } catch (error) {
-        logger.error(`Error sending message to user ${userId}:`, error);
-        failedUserIds.push(userId);
-        removeConnection(userId);
-      }
-    } else {
-      failedUserIds.push(userId);
-    }
-  });
-
-  if (failedUserIds.length > 0) {
-    logger.warn(`Failed to send message to users: ${failedUserIds.join(', ')}`);
-  }
-}
-
-export function handleHeartbeatResponse(userId: string) {
-  heartbeatManager.handleHeartbeatResponse(userId);
 }
 
 export function getConnectionStats(): {
@@ -364,7 +332,7 @@ export async function handleWebSocketMessage(
           room = userAsHost;
           ws.data.roomId = userAsHost.id;
         }
-        
+
         const userInMembers = userAsHost.members.find(member => member.id === ws.data.userId);
         if (!userInMembers && user) {
           roomsManager.addUserToRoom(userAsHost.id, user);
@@ -427,7 +395,7 @@ export async function handleWebSocketMessage(
         break;
       case WS_MESSAGE_TYPES.START_GAME:
         if (!userId || !roomId) return;
-        
+
         const success = await gameManager.startGame(roomId, userId);
         if (!success) {
           const error = ErrorHandler.createPermissionError("Cannot start game - check permissions and player count");
@@ -437,15 +405,15 @@ export async function handleWebSocketMessage(
 
       case WS_MESSAGE_TYPES.STOP_GAME:
         if (!userId || !roomId) return;
-        
+
         const stopRoom = roomsManager.getRoom(roomId);
         if (!stopRoom || stopRoom.host !== userId) return;
-        
+
         gameManager.stopGame(roomId);
         break;
       case WS_MESSAGE_TYPES.HEARTBEAT_RESPONSE:
         if (userId) {
-          handleHeartbeatResponse(userId);
+          heartbeatManager.handleHeartbeatResponse(userId)
         }
         break;
     }
@@ -469,12 +437,12 @@ export function handleWebSocketClose(ws: ServerWebSocket<WebSocketData>) {
 
 function handleUserDisconnect(userId: string) {
   const user = usersManager.getUser(userId);
-  
+
   if (user && user.roomId && user.roomId !== "") {
     logger.info("User leaving room on disconnect", { userId, roomId: user.roomId });
-    
+
     const updatedRoom = roomsManager.removeUserFromRoom(user.roomId, userId);
-    
+
     if (user.roomId && updatedRoom) {
       const room = roomsManager.getRoom(user.roomId);
       if (room && room.host === userId && updatedRoom.members.length > 0) {
@@ -502,7 +470,7 @@ function handleUserDisconnect(userId: string) {
       }
     }
   }
-  
+
   removeConnectionAndUser(userId);
 }
 

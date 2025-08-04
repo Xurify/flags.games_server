@@ -1,5 +1,5 @@
 import { CustomWebSocket } from "../../types/entities";
-import { logger } from "./logger";
+import { logger } from "../utils/logger";
 import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
 
 interface HeartbeatConfig {
