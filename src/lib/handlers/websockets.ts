@@ -69,7 +69,7 @@ const heartbeatManager = new HeartbeatManager(
     removeConnectionAndUser(userId);
   },
   (userId: string) => {
-    usersManager.updateUserActivity(userId);
+    usersManager.updateLastActiveTime(userId);
   }
 );
 
@@ -114,7 +114,7 @@ export function broadcastToRoom<T extends keyof MessageDataTypes>(
   message: { type: T; data: MessageDataTypes[T] }, 
   exclude: string[] = []
 ) {
-  const room = roomsManager.get(roomId);
+  const room = roomsManager.getRoom(roomId);
   if (!room) return;
 
   const messageString = JSON.stringify({
@@ -350,10 +350,10 @@ export async function handleWebSocketMessage(
 
       let room = null;
       if (user && user.roomId && user.roomId !== "") {
-        room = roomsManager.get(user.roomId);
+        room = roomsManager.getRoom(user.roomId);
         ws.data.roomId = user.roomId;
       } else {
-        room = ws.data?.roomId ? roomsManager.get(ws.data.roomId) : null;
+        room = ws.data?.roomId ? roomsManager.getRoom(ws.data.roomId) : null;
       }
 
       const allRooms = Array.from(roomsManager.rooms.values());
@@ -368,7 +368,7 @@ export async function handleWebSocketMessage(
         const userInMembers = userAsHost.members.find(member => member.id === ws.data.userId);
         if (!userInMembers && user) {
           roomsManager.addUserToRoom(userAsHost.id, user);
-          room = roomsManager.get(userAsHost.id);
+          room = roomsManager.getRoom(userAsHost.id);
         }
       }
 
@@ -438,7 +438,7 @@ export async function handleWebSocketMessage(
       case WS_MESSAGE_TYPES.STOP_GAME:
         if (!userId || !roomId) return;
         
-        const stopRoom = roomsManager.get(roomId);
+        const stopRoom = roomsManager.getRoom(roomId);
         if (!stopRoom || stopRoom.host !== userId) return;
         
         gameManager.stopGame(roomId);
@@ -476,7 +476,7 @@ function handleUserDisconnect(userId: string) {
     const updatedRoom = roomsManager.removeUserFromRoom(user.roomId, userId);
     
     if (user.roomId && updatedRoom) {
-      const room = roomsManager.get(user.roomId);
+      const room = roomsManager.getRoom(user.roomId);
       if (room && room.host === userId && updatedRoom.members.length > 0) {
         const newHost = updatedRoom.members[0];
         roomsManager.setNewHost(user.roomId, newHost.id);
@@ -632,7 +632,7 @@ function handleLeaveRoom(ws: ServerWebSocket<WebSocketData>) {
 
   if (!userId || !roomId) return;
 
-  const room = roomsManager.get(roomId);
+  const room = roomsManager.getRoom(roomId);
   if (!room) return;
 
   const updatedRoom = roomsManager.removeUserFromRoom(roomId, userId);
@@ -678,7 +678,7 @@ function handleUpdateSettings(ws: ServerWebSocket<WebSocketData>, data: UpdateSe
   const { userId, roomId } = ws.data;
   if (!userId || !roomId) return;
 
-  const room = roomsManager.get(roomId);
+  const room = roomsManager.getRoom(roomId);
   if (!room || room.host !== userId) return;
 
   const updatedRoom = roomsManager.update(roomId, {
@@ -697,7 +697,7 @@ function handleKickUser(ws: ServerWebSocket<WebSocketData>, data: KickUserData) 
   const { userId, roomId } = ws.data;
   if (!userId || !roomId) return;
 
-  const room = roomsManager.get(roomId);
+  const room = roomsManager.getRoom(roomId);
   if (!room || room.host !== userId) return;
 
   const targetUser = usersManager.getUser(data.userId);

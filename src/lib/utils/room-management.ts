@@ -51,8 +51,12 @@ class RoomManager {
     return room;
   }
 
-  get(roomId: string): Room | undefined {
+  getRoom(roomId: string): Room | undefined {
     return this.rooms.get(roomId);
+  }
+
+  private get(roomId: string): Room | undefined {
+    return this.getRoom(roomId);
   }
 
   has(roomId: string): boolean {

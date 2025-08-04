@@ -118,7 +118,7 @@ class UserManager {
     });
   }
 
-  updateUserActivity(userId: string): void {
+  updateLastActiveTime(userId: string): void {
     this.updateUser(userId, { lastActiveTime: new Date().toISOString() });
   }
 
@@ -142,24 +142,18 @@ class UserManager {
     this.removeUserFromRoom(userId);
     return true;
   }
+
+  isUserAdmin(userId: string): boolean {
+    const user = this.getUser(userId);
+    return user?.isAdmin === true;
+  }
+
+  isUserHost(userId: string, roomId: string): boolean {
+    const user = this.getUser(userId);
+    const room = roomsManager.getRoom(roomId);
+    if (!room || !user) return false;
+    return user?.roomId === roomId && user?.id === room?.host;
+  }
 }
-
-export const requestIsNotFromHost = (
-  userId: string,
-  roomId: string,
-  rooms: Map<string, any>
-): boolean => {
-  if (!roomId || !userId) return true;
-
-  const room = rooms.get(roomId);
-  if (!room) return true;
-
-  return room.host !== userId;
-};
-
-export const isUserAdmin = (userId: string): boolean => {
-  const user = usersManager.getUser(userId);
-  return user?.isAdmin === true;
-};
 
 export const usersManager = new UserManager();

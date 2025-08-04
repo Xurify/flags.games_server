@@ -16,7 +16,7 @@ class GameManager {
   private resultTimers = new Map<string, Timer>();
 
   async startGame(roomId: string, userId: string): Promise<boolean> {
-    const room = roomsManager.get(roomId);
+    const room = roomsManager.getRoom(roomId);
     if (!room) return false;
     
     if (room.host !== userId) return false;
@@ -63,7 +63,7 @@ class GameManager {
   }
 
   async nextQuestion(roomId: string): Promise<void> {
-    const room = roomsManager.get(roomId);
+    const room = roomsManager.getRoom(roomId);
     if (!room || !room.gameState.isActive) return;
 
     const { gameState } = room;
@@ -123,7 +123,7 @@ class GameManager {
     userId: string,
     answer: string
   ): Promise<void> {
-    const room = roomsManager.get(roomId);
+    const room = roomsManager.getRoom(roomId);
     const user = usersManager.getUser(userId);
 
     if (!room || !user || !room.gameState.currentQuestion) return;
@@ -185,7 +185,7 @@ class GameManager {
   }
 
   private endQuestion(roomId: string): void {
-    const room = roomsManager.get(roomId);
+    const room = roomsManager.getRoom(roomId);
     if (!room || !room.gameState.currentQuestion) return;
 
     this.clearTimers(roomId);
@@ -209,7 +209,7 @@ class GameManager {
   }
 
   private endGame(roomId: string): void {
-    const room = roomsManager.get(roomId);
+    const room = roomsManager.getRoom(roomId);
     if (!room) return;
 
     this.clearTimers(roomId);
@@ -354,7 +354,7 @@ class GameManager {
   }
 
   stopGame(roomId: string): boolean {
-    const room = roomsManager.get(roomId);
+    const room = roomsManager.getRoom(roomId);
     if (!room) return false;
 
     this.clearTimers(roomId);
