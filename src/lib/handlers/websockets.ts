@@ -1,9 +1,9 @@
 import { ServerWebSocket } from "bun";
 import { nanoid } from "nanoid";
 
-import { roomsManager } from "../utils/room-management";
-import { usersManager } from "../utils/user-management";
-import { gameManager } from "../utils/game-management";
+import { roomsManager } from "../managers/room-management";
+import { usersManager } from "../managers/user-management";
+import { gameManager } from "../managers/game-management";
 import { WebSocketData, Room, CustomWebSocket, WebSocketMessage } from "../../types/entities";
 import {
   WebSocketMessageSchema,
@@ -19,7 +19,7 @@ import { WebSocketSecurity } from "../utils/security/network";
 import { ErrorHandler, AppError, ErrorCode } from "../utils/error-handler";
 import { logger } from "../utils/logger";
 import { AuthDataSchema } from "../schemas/websockets";
-import { HeartbeatManager } from "../utils/heartbeat-management";
+import { HeartbeatManager } from "../managers/heartbeat-management";
 import {
   GameStartingData,
   NewQuestionData,

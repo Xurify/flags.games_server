@@ -1,7 +1,7 @@
 import { BunRequest, serve } from "bun";
-import { roomsManager } from "./lib/utils/room-management";
-import { usersManager } from "./lib/utils/user-management";
-import { gameManager } from "./lib/utils/game-management";
+import { roomsManager } from "./lib/managers/room-management";
+import { usersManager } from "./lib/managers/user-management";
+import { gameManager } from "./lib/managers/game-management";
 import { cleanupService } from "./lib/utils/cleanup";
 import { handleWebSocketMessage, handleWebSocketOpen, handleWebSocketClose } from "./lib/handlers/websockets";
 import { getCorsHeaders, handlePreflightRequest } from "./lib/utils/security/cors";
