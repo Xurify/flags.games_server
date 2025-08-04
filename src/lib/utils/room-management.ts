@@ -52,11 +52,17 @@ class RoomManager {
   }
 
   getRoom(roomId: string): Room | undefined {
-    return this.rooms.get(roomId);
+    return this.get(roomId);
   }
 
   private get(roomId: string): Room | undefined {
-    return this.getRoom(roomId);
+    return this.rooms.get(roomId);
+  }
+  
+  getRoomByInviteCode(inviteCode: string): Room | undefined {
+    return Array.from(this.rooms.values()).find(
+      (room) => room.inviteCode === inviteCode
+    );
   }
 
   has(roomId: string): boolean {
@@ -106,16 +112,6 @@ class RoomManager {
     const updatedRoom = { ...room, ...updates };
     this.set(roomId, { ...room, ...updates });
     return updatedRoom;
-  }
-
-  getRoomByInviteCode(inviteCode: string): Room | undefined {
-    return Array.from(this.rooms.values()).find(
-      (room) => room.inviteCode === inviteCode
-    );
-  }
-
-  getRoomById(roomId: string): Room | undefined {
-    return this.rooms.get(roomId);
   }
 
   addUserToRoom(roomId: string, user: User): Room | null {
