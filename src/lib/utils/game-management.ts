@@ -18,7 +18,7 @@ class GameManager {
   async startGame(roomId: string, userId: string): Promise<boolean> {
     const room = roomsManager.getRoom(roomId);
     if (!room) return false;
-    
+
     if (room.host !== userId) return false;
     if (room.gameState.isActive) return false;
     if (room.members.length < 2) return false;
@@ -101,6 +101,13 @@ class GameManager {
       currentQuestion: question,
       answers: [],
       currentQuestionIndex: gameState.currentQuestionIndex + 1,
+    });
+
+    room.members.forEach((member) => {
+      usersManager.updateUser(member.id, {
+        currentAnswer: undefined,
+        answerTime: undefined,
+      });
     });
 
     broadcastToRoom(roomId, {
@@ -190,7 +197,7 @@ class GameManager {
 
     this.clearTimers(roomId);
 
-    roomsManager.updateGameState(roomId, { 
+    roomsManager.updateGameState(roomId, {
       phase: "results",
     });
 

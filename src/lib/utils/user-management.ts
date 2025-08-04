@@ -76,32 +76,6 @@ class UserManager {
     return updatedUser;
   }
 
-  resetUserScore(userId: string): User | null {
-    const user = this.getUser(userId);
-    if (!user) return null;
-
-    const updatedUser = { ...user, score: 0 };
-    this.setUser(userId, updatedUser);
-    return updatedUser;
-  }
-
-  resetAllUsersInRoom(roomId: string): void {
-    const users = this.getUsersByRoom(roomId);
-    users.forEach((user) => {
-      this.updateUser(user.id, {
-        score: 0,
-        currentAnswer: undefined,
-        answerTime: undefined,
-      });
-    });
-  }
-
-  getUsersByRoom(roomId: string): User[] {
-    return Array.from(this.users.values()).filter(
-      (user) => user.roomId === roomId
-    );
-  }
-
   removeUserFromRoom(userId: string): void {
     const user = this.getUser(userId);
     if (user) {
