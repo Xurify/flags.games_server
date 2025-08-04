@@ -90,9 +90,7 @@ export function removeConnection(userId: string) {
 export function removeConnectionAndUser(userId: string) {
   if (!connections.has(userId)) return;
 
-  connections.delete(userId);
-  usersManager.removeUserConnection(userId);
-  heartbeatManager.stopHeartbeat(userId);
+  removeConnection(userId);
 
   const user = usersManager.getUser(userId);
   if (user && user.roomId) {
@@ -523,8 +521,6 @@ function handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: JoinRoomData) 
 
   ws.data.roomId = room.id;
 
-  //addConnection(userId, ws);
-
   if (roomsManager.isScheduledForDeletion(room.id)) {
     roomsManager.cancelScheduledDeletion(room.id);
   }
@@ -586,8 +582,6 @@ function handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: CreateRoomDa
 
   ws.data.roomId = roomId;
   ws.data.isAdmin = true;
-
-  //addConnection(userId, ws);
 
   ws.send(JSON.stringify({
     type: WS_MESSAGE_TYPES.CREATE_ROOM_SUCCESS,
