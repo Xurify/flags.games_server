@@ -1,6 +1,6 @@
-import { roomsManager } from './room-management';
-import { usersManager } from './user-management';
-import { gameManager } from './game-management';
+import { roomsManager } from '../managers/room-management';
+import { usersManager } from '../managers/user-management';
+import { gameManager } from '../managers/game-management';
 import { logger } from './logger';
 
 interface CleanupConfig {
@@ -28,7 +28,7 @@ interface CleanupResult {
 const DEFAULT_CONFIG: CleanupConfig = {
   interval: 5 * 60 * 1000, // 5 minutes
   inactiveUserTimeout: 5, // 5 minutes
-  emptyRoomTimeout: 5, // 5 minutes
+  emptyRoomTimeout: 10, // 10 minutes
 };
 
 class CleanupService {

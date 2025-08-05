@@ -8,7 +8,6 @@ import {
   GameAnswer,
 } from "../../types/entities";
 import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
-import { broadcastToRoom } from "../handlers/websockets";
 import { QuestionResultsData } from "../schemas/websockets";
 
 class GameManager {
@@ -49,7 +48,7 @@ class GameManager {
 
     roomsManager.updateGameState(roomId, gameState);
 
-    broadcastToRoom(roomId, {
+    this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.GAME_STARTING,
       data: { countdown: 5 },
     });
@@ -109,7 +108,7 @@ class GameManager {
       });
     });
 
-    broadcastToRoom(roomId, {
+    this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.NEW_QUESTION,
       data: {
         question: question,
@@ -174,7 +173,7 @@ class GameManager {
     const updatedAnswers = [...room.gameState.answers, gameAnswer];
     roomsManager.updateGameState(roomId, { answers: updatedAnswers });
 
-    broadcastToRoom(roomId, {
+    this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.ANSWER_SUBMITTED,
       data: {
         userId,
@@ -202,7 +201,7 @@ class GameManager {
 
     const resultsData = this.generateResultsData(room);
 
-    broadcastToRoom(roomId, {
+    this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.QUESTION_RESULTS,
       data: resultsData,
     });
@@ -229,7 +228,7 @@ class GameManager {
       leaderboard: finalLeaderboard,
     });
 
-    broadcastToRoom(roomId, {
+    this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.GAME_ENDED,
       data: {
         leaderboard: finalLeaderboard,
@@ -372,12 +371,17 @@ class GameManager {
       gameEndTime: Date.now(),
     });
 
-    broadcastToRoom(roomId, {
+    this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.GAME_STOPPED,
       data: { timestamp: Date.now() },
     });
 
     return true;
+  }
+
+  private async broadcastToRoom(roomId: string, message: any): Promise<void> {
+    const { webSocketManager } = await import("./websocket-management.js");
+    webSocketManager.broadcastToRoom(roomId, message);
   }
 }
 

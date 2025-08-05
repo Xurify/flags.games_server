@@ -3,7 +3,7 @@ import { roomsManager } from "./lib/managers/room-management";
 import { usersManager } from "./lib/managers/user-management";
 import { gameManager } from "./lib/managers/game-management";
 import { cleanupService } from "./lib/utils/cleanup";
-import { handleWebSocketMessage, handleWebSocketOpen, handleWebSocketClose } from "./lib/handlers/websockets";
+import { webSocketManager } from "./lib/managers/websocket-management";
 import { getCorsHeaders, handlePreflightRequest } from "./lib/utils/security/cors";
 import { RequestValidator } from "./lib/utils/security/request-validator";
 import { ErrorHandler, AppError, ErrorCode } from "./lib/utils/error-handler";
@@ -148,13 +148,13 @@ const server = serve({
   },
   websocket: {
     open: (ws: ServerWebSocket<WebSocketData>) => {
-      handleWebSocketOpen(ws);
+      webSocketManager.handleOpen(ws);
     },
     message: (ws: ServerWebSocket<WebSocketData>, message: string | Buffer) => {
-      handleWebSocketMessage(ws, message);
+      webSocketManager.handleMessage(ws, message);
     },
     close: (ws: ServerWebSocket<WebSocketData>) => {
-      handleWebSocketClose(ws);
+      webSocketManager.handleClose(ws);
     },
     perMessageDeflate: true,
   },
