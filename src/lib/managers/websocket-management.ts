@@ -36,6 +36,7 @@ import { HeartbeatManager } from "./heartbeat-management";
 import { roomsManager } from "./room-management";
 import { usersManager } from "./user-management";
 import { gameManager } from "./game-management";
+import { isDevelopment } from "../utils/env";
 
 export interface MessageDataTypes {
   [WS_MESSAGE_TYPES.GAME_STARTING]: GameStartingData;
@@ -75,7 +76,7 @@ class WebSocketManager {
         interval: 30000,
         timeout: 10000,
         maxMissed: 3,
-        enableLogging: process.env.NODE_ENV === 'development'
+        enableLogging: isDevelopment,
       },
       (userId: string): void => this.removeConnectionAndUser(userId),
       (userId: string): void => usersManager.updateLastActiveTime(userId)
