@@ -1,10 +1,12 @@
 {
   "name": "flags.games_server",
   "scripts": {
-    "dev": "bun run --hot src/app.ts"
+    "start": "bun run src/app.ts",
+    "dev": "bun run --hot src/app.ts",
+    "lint": "biome check .",
+    "format": "biome format --write ."
   },
   "dependencies": {
-    "hono": "^4.8.4",
     "isomorphic-dompurify": "^2.26.0",
     "nanoid": "^5.1.5",
     "zod": "^4.0.10"
@@ -18,7 +20,7 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx}": [
-      "npx ultracite format"
+      "biome check --apply --staged"
     ]
   }
 }
