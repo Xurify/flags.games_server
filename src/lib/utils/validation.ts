@@ -14,7 +14,6 @@ const VALIDATION_LIMITS = {
   ANSWER: { MIN: 1, MAX: 100 },
   INVITE_CODE_LENGTH: 6,
   QUESTION_COUNT: { MIN: 15, MAX: 197 },
-  TIME_PER_QUESTION: { MIN: 10, MAX: 30 },
   ROOM_SIZE: { MIN: 2, MAX: 5 }
 } as const;
 
@@ -42,7 +41,15 @@ export const InviteCodeSchema = z.string().length(VALIDATION_LIMITS.INVITE_CODE_
 export const AnswerSchema = z.string().min(VALIDATION_LIMITS.ANSWER.MIN).max(VALIDATION_LIMITS.ANSWER.MAX).transform(InputSanitizer.sanitizeString);
 
 export const QuestionCountSchema = z.number().min(VALIDATION_LIMITS.QUESTION_COUNT.MIN).max(VALIDATION_LIMITS.QUESTION_COUNT.MAX);
-export const TimePerQuestionSchema = z.number().min(VALIDATION_LIMITS.TIME_PER_QUESTION.MIN).max(VALIDATION_LIMITS.TIME_PER_QUESTION.MAX);
+
+export const TIME_PER_QUESTION_ALLOWED = [10, 15, 20, 30] as const;
+export type TimePerQuestion = typeof TIME_PER_QUESTION_ALLOWED[number];
+export const TimePerQuestionSchema = z.union([
+  z.literal(10),
+  z.literal(15),
+  z.literal(20),
+  z.literal(30),
+]);
 
 export const RoomSettingsSchema = z.object({
   difficulty: DifficultySchema.optional(),
