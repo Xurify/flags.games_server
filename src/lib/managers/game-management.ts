@@ -28,6 +28,7 @@ class GameManager {
       phase: "starting",
       currentQuestion: null,
       answers: [],
+      answerHistory: [],
       currentQuestionIndex: 0,
       totalQuestions: getDifficultySettings(room.settings.difficulty).count,
       difficulty: room.settings.difficulty,
@@ -167,7 +168,8 @@ class GameManager {
     };
 
     const updatedAnswers = [...room.gameState.answers, gameAnswer];
-    roomsManager.updateGameState(roomId, { answers: updatedAnswers });
+    const updatedHistory = [...room.gameState.answerHistory, gameAnswer];
+    roomsManager.updateGameState(roomId, { answers: updatedAnswers, answerHistory: updatedHistory });
 
     this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.ANSWER_SUBMITTED,
@@ -217,10 +219,11 @@ class GameManager {
 
     const finalLeaderboard = this.generateFinalLeaderboard(room);
 
-    roomsManager.updateGameState(roomId, {
+    const endTime = Date.now();
+    const updatedRoom = roomsManager.updateGameState(roomId, {
       phase: "finished",
       isActive: false,
-      gameEndTime: Date.now(),
+      gameEndTime: endTime,
       leaderboard: finalLeaderboard,
     });
 
@@ -228,7 +231,7 @@ class GameManager {
       type: WS_MESSAGE_TYPES.GAME_ENDED,
       data: {
         leaderboard: finalLeaderboard,
-        gameStats: this.generateGameStats(room),
+        gameStats: this.generateGameStats(updatedRoom || room),
       },
     });
   }
@@ -278,7 +281,7 @@ class GameManager {
         const user = usersManager.getUser(member.id);
         if (!user) return null;
 
-        const userAnswers = room.gameState.answers.filter(
+        const userAnswers = room.gameState.answerHistory.filter(
           (a) => a.userId === user.id
         );
         const correctAnswers = userAnswers.filter((a) => a.isCorrect).length;
@@ -302,8 +305,8 @@ class GameManager {
 
   private generateGameStats(room: Room) {
     const { gameState } = room;
-    const totalAnswers = gameState.answers.length;
-    const correctAnswers = gameState.answers.filter((a) => a.isCorrect).length;
+    const totalAnswers = gameState.answerHistory.length;
+    const correctAnswers = gameState.answerHistory.filter((a) => a.isCorrect).length;
 
     return {
       totalQuestions: gameState.totalQuestions,
@@ -312,8 +315,8 @@ class GameManager {
       accuracy: totalAnswers > 0 ? (correctAnswers / totalAnswers) * 100 : 0,
       averageTime:
         totalAnswers > 0
-          ? gameState.answers.reduce((sum, a) => sum + a.timeToAnswer, 0) /
-          totalAnswers
+          ? gameState.answerHistory.reduce((sum, a) => sum + a.timeToAnswer, 0) /
+            totalAnswers
           : 0,
       difficulty: gameState.difficulty,
       duration: gameState.gameEndTime! - gameState.gameStartTime!,

@@ -97,6 +97,7 @@ export const GameStateSchema = z.object({
   phase: z.enum(["waiting", "starting", "question", "results", "finished"]),
   currentQuestion: GameQuestionSchema.nullable(),
   answers: z.array(GameAnswerSchema),
+  answerHistory: z.array(GameAnswerSchema),
   currentQuestionIndex: z.number(),
   totalQuestions: z.number(),
   difficulty: DifficultySchema,
@@ -122,8 +123,8 @@ export const RoomSchema = z.object({
 export const AuthSuccessDataSchema = z.object({
   userId: UserIdSchema,
   isAdmin: z.boolean(),
-  user: UserSchema.optional(),
-  room: RoomSchema.nullable().optional(),
+  user: UserSchema,
+  room: RoomSchema,
 });
 
 export const RoomSuccessDataSchema = z.object({
@@ -185,8 +186,6 @@ export const QuestionResultsDataSchema = z.object({
     userId: UserIdSchema,
     username: UsernameSchema,
     score: z.number(),
-    correctAnswers: z.number(),
-    averageTime: z.number(),
   })),
 });
 

@@ -48,6 +48,7 @@ export interface GameState {
   phase: "waiting" | "starting" | "question" | "results" | "finished";
   currentQuestion: GameQuestion | null;
   answers: GameAnswer[];
+  answerHistory: GameAnswer[];
   currentQuestionIndex: number;
   totalQuestions: number;
   difficulty: Difficulty;

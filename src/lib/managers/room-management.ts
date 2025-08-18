@@ -18,6 +18,7 @@ class RoomManager {
       phase: "waiting",
       currentQuestion: null,
       answers: [],
+      answerHistory: [],
       currentQuestionIndex: 0,
       totalQuestions: difficultySettings.count,
       difficulty: settings?.difficulty,
