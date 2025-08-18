@@ -255,11 +255,11 @@ class GameManager {
         .map((member) => {
           const user = usersManager.getUser(member.id);
           if (!user) return null;
-          const userAnswers = answers.filter((a) => a.userId === user.id);
-          const correctAnswers = userAnswers.filter((a) => a.isCorrect).length;
+          const userAnswers = answers.filter((answer) => answer.userId === user.id);
+          const correctAnswers = userAnswers.filter((answer) => answer.isCorrect).length;
           const averageTime =
             userAnswers.length > 0
-              ? userAnswers.reduce((sum, a) => sum + a.timeToAnswer, 0) /
+              ? userAnswers.reduce((accumulatedTimeMs, answer) => accumulatedTimeMs + answer.timeToAnswer, 0) /
                 userAnswers.length
               : 0;
           return {
@@ -271,7 +271,7 @@ class GameManager {
           };
         })
         .filter((item): item is NonNullable<typeof item> => item !== null)
-        .sort((a, b) => b.score - a.score),
+        .sort((memberA, memberB) => memberB.score - memberA.score),
     };
   }
 
@@ -282,12 +282,12 @@ class GameManager {
         if (!user) return null;
 
         const userAnswers = room.gameState.answerHistory.filter(
-          (a) => a.userId === user.id
+          (answer) => answer.userId === user.id
         );
-        const correctAnswers = userAnswers.filter((a) => a.isCorrect).length;
+        const correctAnswers = userAnswers.filter((answer) => answer.isCorrect).length;
         const averageTime =
           userAnswers.length > 0
-            ? userAnswers.reduce((sum, a) => sum + a.timeToAnswer, 0) /
+            ? userAnswers.reduce((accumulatedTimeMs, answer) => accumulatedTimeMs + answer.timeToAnswer, 0) /
             userAnswers.length
             : 0;
 
@@ -300,13 +300,13 @@ class GameManager {
         };
       })
       .filter((member) => !!member)
-      .sort((a, b) => b!.score - a!.score);
+      .sort((memberA, memberB) => memberB!.score - memberA!.score);
   }
 
   private generateGameStats(room: Room) {
     const { gameState } = room;
     const totalAnswers = gameState.answerHistory.length;
-    const correctAnswers = gameState.answerHistory.filter((a) => a.isCorrect).length;
+    const correctAnswers = gameState.answerHistory.filter((answer) => answer.isCorrect).length;
 
     return {
       totalQuestions: gameState.totalQuestions,
@@ -315,7 +315,7 @@ class GameManager {
       accuracy: totalAnswers > 0 ? (correctAnswers / totalAnswers) * 100 : 0,
       averageTime:
         totalAnswers > 0
-          ? gameState.answerHistory.reduce((sum, a) => sum + a.timeToAnswer, 0) /
+          ? gameState.answerHistory.reduce((accumulatedTimeMs, answer) => accumulatedTimeMs + answer.timeToAnswer, 0) /
             totalAnswers
           : 0,
       difficulty: gameState.difficulty,

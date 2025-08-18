@@ -10,16 +10,16 @@ export enum ErrorCode {
   NOT_FOUND = 'NOT_FOUND',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
   INVALID_INPUT = 'INVALID_INPUT',
-  
+
   // Server errors (5xx)
   INTERNAL_ERROR = 'INTERNAL_ERROR',
   DATABASE_ERROR = 'DATABASE_ERROR',
   EXTERNAL_SERVICE_ERROR = 'EXTERNAL_SERVICE_ERROR',
   CONFIGURATION_ERROR = 'CONFIGURATION_ERROR',
-  
+
   // WebSocket specific errors
   WEBSOCKET_MESSAGE_ERROR = 'WEBSOCKET_MESSAGE_ERROR',
-  
+
   // Game specific errors
   ROOM_NOT_FOUND = 'ROOM_NOT_FOUND',
   ROOM_FULL = 'ROOM_FULL',
@@ -196,10 +196,19 @@ export class ErrorHandler {
     this.errorCounts.set(error.code, currentCount + 1);
   }
 
-  static getErrorStats(): Record<string, any> {
+  static getErrorStats(): {
+    totalErrors: number;
+    errorsByCode: Record<ErrorCode, number>;
+    topErrors: { code: ErrorCode; count: number }[];
+  } {
+    const errorsByCode = Object.values(ErrorCode).reduce((acc, code) => {
+      acc[code as ErrorCode] = this.errorCounts.get(code as ErrorCode) ?? 0;
+      return acc;
+    }, {} as Record<ErrorCode, number>);
+
     return {
       totalErrors: Array.from(this.errorCounts.values()).reduce((sum, count) => sum + count, 0),
-      errorsByCode: Object.fromEntries(this.errorCounts.entries()),
+      errorsByCode,
       topErrors: Array.from(this.errorCounts.entries())
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
@@ -265,29 +274,29 @@ export class ErrorHandler {
   static setupGlobalErrorHandlers(): void {
     process.on('uncaughtException', (error: Error) => {
       logger.error('Uncaught Exception:', error);
-      
+
       const appError = new AppError({
         code: ErrorCode.INTERNAL_ERROR,
         message: 'Uncaught exception',
         statusCode: 500,
         cause: error
       });
-      
+
       this.updateErrorMetrics(appError);
-      
+
       process.exit(1);
     });
 
     process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
       logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-      
+
       const appError = new AppError({
         code: ErrorCode.INTERNAL_ERROR,
         message: 'Unhandled promise rejection',
         statusCode: 500,
         details: { reason: String(reason) }
       });
-      
+
       this.updateErrorMetrics(appError);
     });
   }

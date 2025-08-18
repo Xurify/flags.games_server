@@ -82,10 +82,10 @@ export const safeValidate = <T>(schema: z.ZodSchema<T>, data: unknown) => {
     return { success: true as const, data: result.data };
   } else {
     const errorMap = new Map<string, string>();
-    for (const e of result.error.issues) {
-      const path = e.path.join('.');
+    for (const issue of result.error.issues) {
+      const path = issue.path.join('.');
       if (!errorMap.has(path)) {
-        errorMap.set(path, e.message);
+        errorMap.set(path, issue.message);
       }
     }
     const errorMessages = Array.from(errorMap.entries())
