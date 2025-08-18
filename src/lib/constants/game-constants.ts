@@ -1,4 +1,4 @@
-export const CORRECT_POINT_COST = 1;
+export const CORRECT_POINT_COST = 10;
 export const MAX_HEARTS = 3;
 
 export type Difficulty = "easy" | "medium" | "hard" | "expert";

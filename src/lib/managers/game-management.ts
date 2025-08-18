@@ -8,6 +8,7 @@ import {
   GameAnswer,
 } from "../../types/entities";
 import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
+import { CORRECT_POINT_COST } from "../constants/game-constants";
 import { QuestionResultsData } from "../schemas/websockets";
 
 class GameManager {
@@ -146,12 +147,7 @@ class GameManager {
 
     let pointsAwarded = 0;
     if (isCorrect) {
-      const basePoints = this.getBasePoints(room.settings.difficulty);
-      const speedBonus = this.calculateSpeedBonus(
-        timeToAnswer,
-        room.settings.timePerQuestion
-      );
-      pointsAwarded = basePoints + speedBonus;
+      pointsAwarded = CORRECT_POINT_COST;
     }
 
     usersManager.updateUser(userId, {
@@ -255,13 +251,21 @@ class GameManager {
       leaderboard: room.members
         .map((member) => {
           const user = usersManager.getUser(member.id);
-          return user
-            ? {
-              userId: user.id,
-              username: user.username,
-              score: user.score,
-            }
-            : null;
+          if (!user) return null;
+          const userAnswers = answers.filter((a) => a.userId === user.id);
+          const correctAnswers = userAnswers.filter((a) => a.isCorrect).length;
+          const averageTime =
+            userAnswers.length > 0
+              ? userAnswers.reduce((sum, a) => sum + a.timeToAnswer, 0) /
+                userAnswers.length
+              : 0;
+          return {
+            userId: user.id,
+            username: user.username,
+            score: user.score,
+            correctAnswers,
+            averageTime,
+          };
         })
         .filter((item): item is NonNullable<typeof item> => item !== null)
         .sort((a, b) => b.score - a.score),
@@ -316,26 +320,7 @@ class GameManager {
     };
   }
 
-  private getBasePoints(difficulty: string): number {
-    switch (difficulty) {
-      case "expert":
-        return 1000;
-      case "hard":
-        return 750;
-      case "medium":
-        return 500;
-      case "easy":
-        return 250;
-      default:
-        return 250;
-    }
-  }
-
-  private calculateSpeedBonus(timeToAnswer: number, timePerQuestion: number): number {
-    const timeInSeconds = timeToAnswer / 1000;
-    const speedRatio = 1 - timeInSeconds / timePerQuestion;
-    return Math.max(0, Math.floor(speedRatio * 500));
-  }
+  
 
   private clearTimers(roomId: string): void {
     const questionTimer = this.questionTimers.get(roomId);
