@@ -204,7 +204,7 @@ class GameManager {
 
     const timer = setTimeout(() => {
       this.nextQuestion(roomId);
-    }, 8000);
+    }, 5000);
 
     this.resultTimers.set(roomId, timer);
   }
