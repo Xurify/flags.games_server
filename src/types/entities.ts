@@ -1,6 +1,7 @@
 import { ServerWebSocket } from "bun";
 import { Country } from "../lib/game-logic/data/countries";
 import { Difficulty, WS_MESSAGE_TYPES } from "../lib/constants";
+import { TimePerQuestion } from "../lib/utils/validation";
 
 export interface User {
   id: string;
@@ -61,7 +62,7 @@ export interface GameState {
 export interface RoomSettings {
   maxRoomSize: number;
   difficulty: Difficulty;
-  timePerQuestion: number;
+  timePerQuestion: TimePerQuestion;
   //allowSpectators: boolean;
   showLeaderboard?: boolean;
   gameMode?: GameMode;

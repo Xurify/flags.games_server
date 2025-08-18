@@ -122,8 +122,8 @@ export const RoomSchema = z.object({
 export const AuthSuccessDataSchema = z.object({
   userId: UserIdSchema,
   isAdmin: z.boolean(),
-  user: UserSchema,
-  room: RoomSchema,
+  user: UserSchema.optional(),
+  room: RoomSchema.nullable().optional(),
 });
 
 export const RoomSuccessDataSchema = z.object({
@@ -185,6 +185,8 @@ export const QuestionResultsDataSchema = z.object({
     userId: UserIdSchema,
     username: UsernameSchema,
     score: z.number(),
+    correctAnswers: z.number(),
+    averageTime: z.number(),
   })),
 });
 
