@@ -179,6 +179,8 @@ class GameManager {
         hasAnswered: true,
         totalAnswers: updatedAnswers.length,
         totalPlayers: room.members.length,
+        pointsAwarded,
+        score: user.score + pointsAwarded,
       },
     });
 

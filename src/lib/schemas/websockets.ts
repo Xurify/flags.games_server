@@ -165,6 +165,8 @@ export const AnswerSubmittedDataSchema = z.object({
   hasAnswered: z.boolean(),
   totalAnswers: z.number(),
   totalPlayers: z.number(),
+  pointsAwarded: z.number(),
+  score: z.number(),
 });
 
 export const QuestionResultsDataSchema = z.object({
