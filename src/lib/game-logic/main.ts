@@ -45,14 +45,8 @@ function sampleOne<T>(array: T[]): T | undefined {
 // DIFFICULTY AND SETTINGS
 // ============================================================================
 
-const getCountriesForDifficulty = (difficulty: Difficulty) => {
-  const baseDifficulty =
-    difficulty === EXPERT_DIFFICULTY ? HARD_DIFFICULTY : difficulty;
-  return getDifficultyCountries(baseDifficulty);
-};
-
 export const getDifficultySettings = (difficulty: Difficulty) => {
-  const countries = getCountriesForDifficulty(difficulty);
+  const countries = getDifficultyCountries(difficulty);
   const settings = {
     [DEFAULT_DIFFICULTY]: { count: 15, label: "Easy" },
     [MEDIUM_DIFFICULTY]: { count: 25, label: "Medium" },
@@ -413,7 +407,7 @@ export const generateQuestion = (
   difficulty: Difficulty,
   usedCountries: Set<string> = new Set()
 ): QuestionData | null => {
-  const availableCountries = getCountriesForDifficulty(difficulty);
+  const availableCountries = getDifficultyCountries(difficulty);
   const remainingCountries = availableCountries.filter(
     (country) => !usedCountries.has(country.code)
   );

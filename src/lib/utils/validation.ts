@@ -52,8 +52,8 @@ export const TimePerQuestionSchema = z.union([
 ]);
 
 export const RoomSettingsSchema = z.object({
-  difficulty: DifficultySchema.optional(),
-  questionCount: QuestionCountSchema.optional(),
+  difficulty: DifficultySchema,
+  questionCount: QuestionCountSchema,
   timePerQuestion: TimePerQuestionSchema.optional(),
   allowSpectators: z.boolean().optional(),
   showLeaderboard: z.boolean().optional(),
