@@ -21,7 +21,6 @@ class UserManager {
       roomId: params.roomId,
       created: new Date().toISOString(),
       isAdmin: params.isAdmin || false,
-      score: 0,
       lastActiveTime: new Date().toISOString(),
     };
 
@@ -63,15 +62,6 @@ class UserManager {
     if (!user) return null;
 
     const updatedUser = { ...user, ...updates };
-    this.setUser(userId, updatedUser);
-    return updatedUser;
-  }
-
-  updateUserScore(userId: string, points: number): User | null {
-    const user = this.getUser(userId);
-    if (!user) return null;
-
-    const updatedUser = { ...user, score: user.score + points };
     this.setUser(userId, updatedUser);
     return updatedUser;
   }

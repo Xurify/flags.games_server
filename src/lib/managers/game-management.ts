@@ -42,7 +42,6 @@ class GameManager {
 
     room.members.forEach((member) => {
       usersManager.updateUser(member.id, {
-        score: 0,
         currentAnswer: undefined,
         answerTime: undefined,
       });
@@ -152,7 +151,6 @@ class GameManager {
     }
 
     usersManager.updateUser(userId, {
-      score: user.score + pointsAwarded,
       currentAnswer: answer,
       answerTime: timeToAnswer,
     });
@@ -171,6 +169,10 @@ class GameManager {
     const updatedHistory = [...room.gameState.answerHistory, gameAnswer];
     roomsManager.updateGameState(roomId, { answers: updatedAnswers, answerHistory: updatedHistory });
 
+    const userScore = updatedHistory
+      .filter((a) => a.userId === userId)
+      .reduce((sum, a) => sum + a.pointsAwarded, 0);
+
     this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.ANSWER_SUBMITTED,
       data: {
@@ -180,7 +182,7 @@ class GameManager {
         totalAnswers: updatedAnswers.length,
         totalPlayers: room.members.length,
         pointsAwarded,
-        score: user.score + pointsAwarded,
+        score: userScore,
       },
     });
 
@@ -241,6 +243,7 @@ class GameManager {
   private generateResultsData(room: Room): QuestionResultsData {
     const question = room.gameState.currentQuestion!;
     const answers = room.gameState.answers;
+    const history = room.gameState.answerHistory;
 
     return {
       correctAnswer: question.correctAnswer,
@@ -264,10 +267,13 @@ class GameManager {
               ? userAnswers.reduce((accumulatedTimeMs, answer) => accumulatedTimeMs + answer.timeToAnswer, 0) /
                 userAnswers.length
               : 0;
+          const cumulativeScore = history
+            .filter((h) => h.userId === user.id)
+            .reduce((sum, h) => sum + h.pointsAwarded, 0);
           return {
             userId: user.id,
             username: user.username,
-            score: user.score,
+            score: cumulativeScore,
             correctAnswers,
             averageTime,
           };
@@ -296,7 +302,7 @@ class GameManager {
         return {
           userId: user.id,
           username: user.username,
-          score: user.score,
+          score: userAnswers.reduce((sum, a) => sum + a.pointsAwarded, 0),
           correctAnswers,
           averageTime,
         };
