@@ -90,7 +90,7 @@ class CleanupService {
   private logCleanupResults(result: CleanupResult): void {
     const { removedUsers, removedRooms, duration } = result;
     
-    logger.info(`Cleanup completed in ${duration}ms:`, {
+    logger.debug(`Cleanup completed in ${duration}ms:`, {
       removedUsers,
       removedRooms,
       activeRooms: roomsManager.getActiveRooms().length,
