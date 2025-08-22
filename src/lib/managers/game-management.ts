@@ -16,13 +16,11 @@ class GameManager {
   private questionTimers = new Map<string, Timer>();
   private resultTimers = new Map<string, Timer>();
 
-  async startGame(roomId: string, userId: string): Promise<boolean> {
+  private resetGameState(roomId: string): void {
     const room = roomsManager.getRoom(roomId);
-    if (!room) return false;
+    if (!room) return;
 
-    if (room.host !== userId) return false;
-    if (room.gameState.isActive) return false;
-    if (room.members.length < 2) return false;
+    this.clearTimers(roomId);
 
     const gameState: GameState = {
       isActive: true,
@@ -42,9 +40,25 @@ class GameManager {
     };
 
     roomsManager.updateGameState(roomId, gameState);
+    
     roomsManager.update(roomId, {
-      members: room.members.map((member) => ({ ...member, hasAnswered: false, score: 0 })),
+      members: room.members.map((member) => ({ 
+        ...member, 
+        hasAnswered: false, 
+        score: 0
+      })),
     });
+  }
+
+  async startGame(roomId: string, userId: string): Promise<boolean> {
+    const room = roomsManager.getRoom(roomId);
+    if (!room) return false;
+
+    if (room.host !== userId) return false;
+    if (room.gameState.isActive) return false;
+    if (room.members.length < 2) return false;
+
+    this.resetGameState(roomId);
 
     this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.GAME_STARTING,
@@ -333,6 +347,29 @@ class GameManager {
     return Array.from(roomsManager.rooms.values())
       .filter((room) => room.gameState.isActive)
       .map((room) => room.id);
+  }
+
+  async restartGame(roomId: string, userId: string): Promise<boolean> {
+    const room = roomsManager.getRoom(roomId);
+    if (!room) return false;
+
+    if (room.host !== userId) return false;
+    if (room.members.length < 2) return false;
+    
+    if (room.gameState.isActive && room.gameState.phase !== "finished") return false;
+
+    this.resetGameState(roomId);
+
+    this.broadcastToRoom(roomId, {
+      type: WS_MESSAGE_TYPES.GAME_RESTARTED,
+      data: { countdown: 5 },
+    });
+
+    setTimeout(() => {
+      this.nextQuestion(roomId);
+    }, 5000);
+
+    return true;
   }
 
   stopGame(roomId: string): boolean {

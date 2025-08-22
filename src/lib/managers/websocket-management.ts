@@ -398,6 +398,15 @@ class WebSocketManager {
 
         gameManager.stopGame(roomId);
         break;
+      case WS_MESSAGE_TYPES.RESTART_GAME:
+        if (!userId || !roomId) return;
+
+        const restartSuccess = await gameManager.restartGame(roomId, userId);
+        if (!restartSuccess) {
+          const error = ErrorHandler.createPermissionError("Cannot restart game - check permissions and player count");
+          ErrorHandler.handleWebSocketError(ws, error, "restart_game");
+        }
+        break;
       case WS_MESSAGE_TYPES.HEARTBEAT_RESPONSE:
         if (userId) {
           this.heartbeatManager.handleHeartbeatResponse(userId);

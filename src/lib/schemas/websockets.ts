@@ -205,13 +205,13 @@ export const GameStoppedDataSchema = z.object({
   timestamp: z.number(),
 });
 
-
+export const GameRestartedDataSchema = z.object({
+  countdown: z.number(),
+});
 
 export const SettingsUpdatedDataSchema = z.object({
   settings: RoomSettingsSchema,
 });
-
-
 
 export const ErrorDataSchema = z.object({
   message: z.string(),
@@ -251,6 +251,7 @@ export const WebSocketMessageSchema = z.discriminatedUnion('type', [
       'LEAVE_ROOM',
       'START_GAME',
       'STOP_GAME',
+      'RESTART_GAME',
       'HEARTBEAT_RESPONSE'
     ]),
     data: z.record(z.string(), z.unknown()).optional(),
@@ -319,6 +320,10 @@ export const WebSocketMessageSchema = z.discriminatedUnion('type', [
     data: GameStoppedDataSchema,
   }),
   BaseMessageSchema.extend({
+    type: z.literal('GAME_RESTARTED'),
+    data: GameRestartedDataSchema,
+  }),
+  BaseMessageSchema.extend({
     type: z.literal('HEARTBEAT'),
     data: z.record(z.string(), z.unknown()).optional(),
   }),
@@ -349,6 +354,7 @@ export type QuestionResultsData = z.infer<typeof QuestionResultsDataSchema>;
 export type GameEndedData = z.infer<typeof GameEndedDataSchema>;
 export type SettingsUpdatedData = z.infer<typeof SettingsUpdatedDataSchema>;
 export type GameStoppedData = z.infer<typeof GameStoppedDataSchema>;
+export type GameRestartedData = z.infer<typeof GameRestartedDataSchema>;
 
 export type ErrorData = z.infer<typeof ErrorDataSchema>;
 export type WebSocketMessage = z.infer<typeof WebSocketMessageSchema>;
