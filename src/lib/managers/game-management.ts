@@ -6,6 +6,7 @@ import {
   GameState,
   GameQuestion,
   GameAnswer,
+  GameStateLeaderboard,
 } from "../../types/entities";
 import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
 import { CORRECT_POINT_COST } from "../constants/game-constants";
@@ -167,7 +168,12 @@ class GameManager {
 
     const updatedAnswers = [...room.gameState.answers, gameAnswer];
     const updatedHistory = [...room.gameState.answerHistory, gameAnswer];
-    roomsManager.updateGameState(roomId, { answers: updatedAnswers, answerHistory: updatedHistory });
+    const updatedLeaderboard = this.computeLeaderboardFromHistory(room, updatedHistory);
+    roomsManager.updateGameState(roomId, {
+      answers: updatedAnswers,
+      answerHistory: updatedHistory,
+      leaderboard: updatedLeaderboard,
+    });
 
     const userScore = updatedHistory
       .filter((a) => a.userId === userId)
@@ -197,11 +203,13 @@ class GameManager {
 
     this.clearTimers(roomId);
 
+    const cachedLeaderboard = this.computeLeaderboardFromHistory(room);
     roomsManager.updateGameState(roomId, {
       phase: "results",
+      leaderboard: cachedLeaderboard,
     });
 
-    const resultsData = this.generateResultsData(room);
+    const resultsData = this.generateResultsData(room, cachedLeaderboard);
 
     this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.QUESTION_RESULTS,
@@ -231,6 +239,15 @@ class GameManager {
       leaderboard: finalLeaderboard,
     });
 
+    // Persist final scores on room members for consistency
+    const roomAfterUpdate = roomsManager.getRoom(roomId) || updatedRoom || room;
+    roomsManager.update(roomId, {
+      members: roomAfterUpdate.members.map((m) => {
+        const entry = finalLeaderboard.find((e) => e.userId === m.id);
+        return entry ? { ...m, score: entry.score, hasAnswered: false } : { ...m, hasAnswered: false };
+      }),
+    });
+
     this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.GAME_ENDED,
       data: {
@@ -240,10 +257,12 @@ class GameManager {
     });
   }
 
-  private generateResultsData(room: Room): QuestionResultsData {
+  private generateResultsData(
+    room: Room,
+    leaderboard: GameStateLeaderboard[]
+  ): QuestionResultsData {
     const question = room.gameState.currentQuestion!;
     const answers = room.gameState.answers;
-    const history = room.gameState.answerHistory;
 
     return {
       correctAnswer: question.correctAnswer,
@@ -256,59 +275,46 @@ class GameManager {
         timeToAnswer: answer.timeToAnswer,
         pointsAwarded: answer.pointsAwarded,
       })),
-      leaderboard: room.members
-        .map((member) => {
-          const user = usersManager.getUser(member.id);
-          if (!user) return null;
-          const userAnswers = answers.filter((answer) => answer.userId === user.id);
-          const correctAnswers = userAnswers.filter((answer) => answer.isCorrect).length;
-          const averageTime =
-            userAnswers.length > 0
-              ? userAnswers.reduce((accumulatedTimeMs, answer) => accumulatedTimeMs + answer.timeToAnswer, 0) /
-                userAnswers.length
-              : 0;
-          const cumulativeScore = history
-            .filter((h) => h.userId === user.id)
-            .reduce((sum, h) => sum + h.pointsAwarded, 0);
-          return {
-            userId: user.id,
-            username: user.username,
-            score: cumulativeScore,
-            correctAnswers,
-            averageTime,
-          };
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null)
-        .sort((memberA, memberB) => memberB.score - memberA.score),
+      leaderboard,
     };
   }
 
   private generateFinalLeaderboard(room: Room) {
-    return room.members
-      .map((member) => {
-        const user = usersManager.getUser(member.id);
-        if (!user) return null;
+    return room.gameState.leaderboard;
+  }
 
-        const userAnswers = room.gameState.answerHistory.filter(
-          (answer) => answer.userId === user.id
-        );
-        const correctAnswers = userAnswers.filter((answer) => answer.isCorrect).length;
-        const averageTime =
-          userAnswers.length > 0
-            ? userAnswers.reduce((accumulatedTimeMs, answer) => accumulatedTimeMs + answer.timeToAnswer, 0) /
-            userAnswers.length
-            : 0;
+  private computeLeaderboardFromHistory(
+    room: Room,
+    answerHistory: GameAnswer[] = room.gameState.answerHistory
+  ): GameStateLeaderboard[] {
+    const stats = new Map<string, { score: number; correct: number; timeSum: number; count: number }>();
 
-        return {
-          userId: user.id,
-          username: user.username,
-          score: userAnswers.reduce((sum, a) => sum + a.pointsAwarded, 0),
-          correctAnswers,
-          averageTime,
-        };
-      })
-      .filter((member) => !!member)
-      .sort((memberA, memberB) => memberB!.score - memberA!.score);
+    for (const answer of answerHistory) {
+      const userStat = stats.get(answer.userId) || { score: 0, correct: 0, timeSum: 0, count: 0 };
+      userStat.score += answer.pointsAwarded;
+      if (answer.isCorrect) userStat.correct += 1;
+      userStat.timeSum += answer.timeToAnswer;
+      userStat.count += 1;
+      stats.set(answer.userId, userStat);
+    }
+
+    const leaderboard: GameStateLeaderboard[] = room.members.map((member) => {
+      const user = usersManager.getUser(member.id);
+      const name = user?.username ?? member.username;
+      const userStat = stats.get(member.id);
+      if (!userStat) {
+        return { userId: member.id, username: name, score: 0, correctAnswers: 0, averageTime: 0 };
+      }
+      return {
+        userId: member.id,
+        username: name,
+        score: userStat.score,
+        correctAnswers: userStat.correct,
+        averageTime: userStat.count ? userStat.timeSum / userStat.count : 0,
+      };
+    });
+
+    return leaderboard.sort((a, b) => b.score - a.score);
   }
 
   private generateGameStats(room: Room) {

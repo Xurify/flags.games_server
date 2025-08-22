@@ -15,6 +15,11 @@ export interface User {
   lastActiveTime: string;
 }
 
+export interface RoomMember extends User {
+  hasAnswered: boolean;
+  score: number;
+}
+
 export interface GameQuestion {
   questionNumber: number;
   country: Country;
@@ -76,7 +81,7 @@ export interface Room {
   host: string;
   inviteCode: string;
   gameState: GameState;
-  members: User[];
+  members: RoomMember[];
   created: string;
   settings: RoomSettings;
 }
@@ -155,20 +160,22 @@ export interface KickedData {
 }
 
 export interface GameStartingData {
-  gameState: GameState;
+  countdown: number;
 }
 
 export interface NewQuestionData {
   question: GameQuestion;
+  totalQuestions: number;
 }
 
 export interface AnswerSubmittedData {
   userId: string;
   username: string;
-  answer: string;
-  isCorrect: boolean;
-  timeToAnswer: number;
+  hasAnswered: boolean;
+  totalAnswers: number;
+  totalPlayers: number;
   pointsAwarded: number;
+  score: number;
 }
 
 export interface QuestionResultsData {

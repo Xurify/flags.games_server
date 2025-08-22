@@ -36,7 +36,7 @@ class RoomManager {
       host: host.id,
       inviteCode: nanoid(6).toUpperCase(),
       gameState,
-      members: [host],
+      members: [{ ...host, hasAnswered: false, score: 0 }],
       created: new Date().toISOString(),
       settings: {
         ...{
@@ -128,7 +128,7 @@ class RoomManager {
       return room;
     }
 
-    const updatedMembers = [...room.members, user];
+    const updatedMembers = [...room.members, { ...user, hasAnswered: false, score: 0 }];
     return this.update(roomId, { members: updatedMembers });
   }
 
