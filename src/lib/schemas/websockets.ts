@@ -51,8 +51,6 @@ export const UserSchema = z.object({
   roomId: z.string(),
   created: z.string(),
   isAdmin: z.boolean(),
-  currentAnswer: z.string().optional(),
-  answerTime: z.number().optional(),
   lastActiveTime: z.string(),
 });
 

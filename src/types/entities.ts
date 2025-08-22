@@ -10,8 +10,6 @@ export interface User {
   roomId: string;
   created: string;
   isAdmin: boolean;
-  currentAnswer?: string;
-  answerTime?: number;
   lastActiveTime: string;
 }
 

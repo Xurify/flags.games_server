@@ -41,14 +41,10 @@ class GameManager {
       leaderboard: [],
     };
 
-    room.members.forEach((member) => {
-      usersManager.updateUser(member.id, {
-        currentAnswer: undefined,
-        answerTime: undefined,
-      });
-    });
-
     roomsManager.updateGameState(roomId, gameState);
+    roomsManager.update(roomId, {
+      members: room.members.map((member) => ({ ...member, hasAnswered: false, score: 0 })),
+    });
 
     this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.GAME_STARTING,
@@ -103,13 +99,6 @@ class GameManager {
       currentQuestionIndex: gameState.currentQuestionIndex + 1,
     });
 
-    room.members.forEach((member) => {
-      usersManager.updateUser(member.id, {
-        currentAnswer: undefined,
-        answerTime: undefined,
-      });
-    });
-
     this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.NEW_QUESTION,
       data: {
@@ -150,11 +139,6 @@ class GameManager {
     if (isCorrect) {
       pointsAwarded = CORRECT_POINT_COST;
     }
-
-    usersManager.updateUser(userId, {
-      currentAnswer: answer,
-      answerTime: timeToAnswer,
-    });
 
     const gameAnswer: GameAnswer = {
       userId,
@@ -239,12 +223,11 @@ class GameManager {
       leaderboard: finalLeaderboard,
     });
 
-    // Persist final scores on room members for consistency
     const roomAfterUpdate = roomsManager.getRoom(roomId) || updatedRoom || room;
     roomsManager.update(roomId, {
-      members: roomAfterUpdate.members.map((m) => {
-        const entry = finalLeaderboard.find((e) => e.userId === m.id);
-        return entry ? { ...m, score: entry.score, hasAnswered: false } : { ...m, hasAnswered: false };
+      members: roomAfterUpdate.members.map((member) => {
+        const entry = finalLeaderboard.find((e) => e.userId === member.id);
+        return entry ? { ...member, score: entry.score, hasAnswered: false } : { ...member, hasAnswered: false };
       }),
     });
 
@@ -299,8 +282,7 @@ class GameManager {
     }
 
     const leaderboard: GameStateLeaderboard[] = room.members.map((member) => {
-      const user = usersManager.getUser(member.id);
-      const name = user?.username ?? member.username;
+      const name = member.username;
       const userStat = stats.get(member.id);
       if (!userStat) {
         return { userId: member.id, username: name, score: 0, correctAnswers: 0, averageTime: 0 };
