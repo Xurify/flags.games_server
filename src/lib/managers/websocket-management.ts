@@ -37,6 +37,7 @@ import { roomsManager } from "./room-management";
 import { usersManager } from "./user-management";
 import { gameManager } from "./game-management";
 import { isDevelopment } from "../utils/env";
+import { getDifficultySettings } from "../game-logic/main";
 
 export interface MessageDataTypes {
   [WS_MESSAGE_TYPES.GAME_STARTING]: GameStartingData;
@@ -608,10 +609,13 @@ class WebSocketManager {
       return;
     }
 
+    const difficulty = settings?.difficulty || DEFAULT_DIFFICULTY;
+
     const room = roomsManager.create(roomId, updatedUser, {
-      difficulty: settings?.difficulty || DEFAULT_DIFFICULTY,
+      difficulty: difficulty,
       maxRoomSize: settings?.maxRoomSize || 5,
-      timePerQuestion: settings?.timePerQuestion || 30,
+      timePerQuestion: settings?.timePerQuestion || 10,
+      questionCount: getDifficultySettings(difficulty).count,
     });
 
     ws.data.roomId = roomId;
