@@ -2,15 +2,15 @@ import { generateQuestion, getDifficultySettings } from "../game-logic/main";
 import { roomsManager } from "./room-management";
 import { usersManager } from "./user-management";
 import {
-  Room,
-  GameState,
   GameQuestion,
-  GameAnswer,
   GameStateLeaderboard,
+  Room,
+  GameAnswer,
+  GameState,
+  QuestionResultsData,
 } from "../../types/entities";
 import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
 import { CORRECT_POINT_COST } from "../constants/game-constants";
-import { QuestionResultsData } from "../schemas/websockets";
 
 class GameManager {
   private questionTimers = new Map<string, Timer>();
@@ -250,14 +250,7 @@ class GameManager {
     return {
       correctAnswer: question.correctAnswer,
       correctCountry: question.country,
-      playerAnswers: answers.map((answer) => ({
-        userId: answer.userId,
-        username: answer.username,
-        answer: answer.answer,
-        isCorrect: answer.isCorrect,
-        timeToAnswer: answer.timeToAnswer,
-        pointsAwarded: answer.pointsAwarded,
-      })),
+      playerAnswers: answers,
       leaderboard,
     };
   }
@@ -312,14 +305,14 @@ class GameManager {
       averageTime:
         totalAnswers > 0
           ? gameState.answerHistory.reduce((accumulatedTimeMs, answer) => accumulatedTimeMs + answer.timeToAnswer, 0) /
-            totalAnswers
+          totalAnswers
           : 0,
       difficulty: gameState.difficulty,
       duration: gameState.gameEndTime! - gameState.gameStartTime!,
     };
   }
 
-  
+
 
   private clearTimers(roomId: string): void {
     const questionTimer = this.questionTimers.get(roomId);

@@ -54,11 +54,6 @@ export const UserSchema = z.object({
   lastActiveTime: z.string(),
 });
 
-export const RoomMemberSchema = UserSchema.extend({
-  hasAnswered: z.boolean(),
-  score: z.number(),
-});
-
 export const GameQuestionSchema = z.object({
   questionNumber: z.number(),
   country: z.object({
@@ -117,7 +112,7 @@ export const RoomSchema = z.object({
   host: UserIdSchema,
   inviteCode: InviteCodeSchema,
   gameState: GameStateSchema,
-  members: z.array(RoomMemberSchema),
+  members: z.array(UserSchema),
   created: z.string(),
   settings: RoomSettingsSchema,
 });
