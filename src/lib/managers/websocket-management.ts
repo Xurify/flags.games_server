@@ -21,6 +21,7 @@ import {
   RoomSuccessData,
   UserJoinedData,
   UserLeftData,
+  UserKickedData,
   HostChangedData,
   KickedData,
   SettingsUpdatedData,
@@ -36,8 +37,10 @@ import { HeartbeatManager } from "./heartbeat-management";
 import { roomsManager } from "./room-management";
 import { usersManager } from "./user-management";
 import { gameManager } from "./game-management";
-import { isDevelopment } from "../utils/env";
+import { env, isDevelopment } from "../utils/env";
 import { getDifficultySettings } from "../game-logic/main";
+
+const MAX_WEBSOCKET_MESSAGE_BYTES = 128 * 1024; // 128KB
 
 export interface MessageDataTypes {
   [WS_MESSAGE_TYPES.GAME_STARTING]: GameStartingData;
@@ -51,6 +54,7 @@ export interface MessageDataTypes {
   [WS_MESSAGE_TYPES.JOIN_ROOM_SUCCESS]: RoomSuccessData;
   [WS_MESSAGE_TYPES.USER_JOINED]: UserJoinedData;
   [WS_MESSAGE_TYPES.USER_LEFT]: UserLeftData;
+  [WS_MESSAGE_TYPES.USER_KICKED]: UserKickedData;
   [WS_MESSAGE_TYPES.HOST_CHANGED]: HostChangedData;
   [WS_MESSAGE_TYPES.KICKED]: KickedData;
   [WS_MESSAGE_TYPES.SETTINGS_UPDATED]: SettingsUpdatedData;
@@ -146,7 +150,7 @@ class WebSocketManager {
           ws!.send(messageString);
         } catch (error) {
           logger.error(`Error sending message to user ${member.id}:`, error);
-          this.removeConnection(member.id);
+          this.handleUserDisconnect(member.id);
         }
       }
     });
@@ -155,7 +159,7 @@ class WebSocketManager {
   broadcastToUser(userId: string, message: WebSocketMessage): void {
     const ws = this.getConnection(userId);
     if (!this.isConnectionValid(ws)) {
-      this.removeConnection(userId);
+      this.handleUserDisconnect(userId);
       return;
     }
 
@@ -166,7 +170,7 @@ class WebSocketManager {
       }));
     } catch (error) {
       logger.error(`Error sending message to user ${userId}:`, error);
-      this.removeConnection(userId);
+      this.handleUserDisconnect(userId);
     }
   }
 
@@ -182,7 +186,7 @@ class WebSocketManager {
           ws.send(messageString);
         } catch (error) {
           logger.error(`Error broadcasting to user ${userId}:`, error);
-          this.removeConnection(userId);
+          this.handleUserDisconnect(userId);
         }
       }
     });
@@ -201,6 +205,22 @@ class WebSocketManager {
 
   async handleMessage(ws: ServerWebSocket<WebSocketData>, message: string | Buffer): Promise<void> {
     try {
+      const payloadBytes = typeof message === 'string'
+        ? Buffer.byteLength(message)
+        : (message as Buffer).length;
+
+      if (payloadBytes > MAX_WEBSOCKET_MESSAGE_BYTES) {
+        const error = new AppError({
+          code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
+          message: "Message too large",
+          statusCode: 413,
+          details: { size: payloadBytes, limit: MAX_WEBSOCKET_MESSAGE_BYTES }
+        });
+        ErrorHandler.handleWebSocketError(ws, error, "message_too_large");
+        try { ws.close(1009, "Message too large"); } catch {}
+        return;
+      }
+
       const messageString = message.toString();
 
       if (messageString.trim().length === 0) {
@@ -270,7 +290,6 @@ class WebSocketManager {
   handleClose(ws: ServerWebSocket<WebSocketData>): void {
     if (ws.data?.userId) {
       this.handleUserDisconnect(ws.data.userId);
-      this.removeConnection(ws.data.userId);
     }
   }
 
@@ -310,20 +329,26 @@ class WebSocketManager {
       return;
     }
 
+    const { adminToken } = validation.data as { token: string; adminToken?: string };
     ws.data.userId = token;
     ws.data.authenticated = true;
 
-    if (usersManager.getUser(ws.data.userId)) {
-      usersManager.deleteUser(ws.data.userId);
+    if (adminToken && typeof adminToken === 'string' && (env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN)) {
+      ws.data.isAdmin = true;
     }
 
-    usersManager.createUser({
-      id: ws.data.userId,
-      username: "",
-      roomId: "",
-      socketId: nanoid(),
-      isAdmin: ws.data.isAdmin,
-    });
+    const existingUser = usersManager.getUser(ws.data.userId);
+    if (!existingUser) {
+      usersManager.createUser({
+        id: ws.data.userId,
+        username: "",
+        roomId: "",
+        socketId: nanoid(),
+        isAdmin: ws.data.isAdmin,
+      });
+    } else {
+      usersManager.updateUser(ws.data.userId, { isAdmin: ws.data.isAdmin });
+    }
 
     this.addConnection(ws.data.userId, ws);
 
@@ -619,7 +644,6 @@ class WebSocketManager {
     });
 
     ws.data.roomId = roomId;
-    ws.data.isAdmin = true;
 
     ws.send(JSON.stringify({
       type: WS_MESSAGE_TYPES.CREATE_ROOM_SUCCESS,
@@ -661,12 +685,9 @@ class WebSocketManager {
       roomsManager.delete(roomId);
     }
 
-    ws.data.userId = null;
     ws.data.roomId = null;
     ws.data.isAdmin = false;
-
-    this.removeConnection(userId);
-    usersManager.deleteUser(userId);
+    usersManager.updateUser(userId, { roomId: "", isAdmin: false });
   }
 
   private handleUpdateRoomSettings(ws: ServerWebSocket<WebSocketData>, data: UpdateSettingsData): void {
@@ -695,13 +716,37 @@ class WebSocketManager {
 
     const targetUser = usersManager.getUser(data.userId);
     if (targetUser) {
+      const updatedRoom = roomsManager.removeUserFromRoom(roomId, data.userId);
+
+      if (updatedRoom) {
+        const wasHost = room.host === data.userId;
+        if (wasHost && updatedRoom.members.length > 0) {
+          const newHost = updatedRoom.members[0];
+          roomsManager.setNewHost(roomId, newHost.id);
+          usersManager.updateUser(newHost.id, { isAdmin: true });
+          this.broadcastToRoom(roomId, {
+            type: WS_MESSAGE_TYPES.HOST_CHANGED,
+            data: { newHost },
+          });
+        }
+
+        this.broadcastToRoom(roomId, {
+          type: WS_MESSAGE_TYPES.USER_KICKED,
+          data: { userId: data.userId, room: updatedRoom },
+        }, [data.userId]);
+      }
+
       this.broadcastToUser(data.userId, {
         type: WS_MESSAGE_TYPES.KICKED,
         data: { reason: "Kicked by host" },
       });
 
-      this.removeConnection(data.userId);
-      usersManager.deleteUser(data.userId);
+      usersManager.updateUser(data.userId, { roomId: "", isAdmin: false });
+      const targetWs = this.getConnection(data.userId);
+      if (targetWs) {
+        targetWs.data.roomId = null;
+        targetWs.data.isAdmin = false;
+      }
     }
   }
 }

@@ -139,6 +139,11 @@ export const UserLeftDataSchema = z.object({
   room: RoomSchema.nullable(),
 });
 
+export const UserKickedDataSchema = z.object({
+  userId: UserIdSchema,
+  room: RoomSchema.nullable(),
+});
+
 export const HostChangedDataSchema = z.object({
   newHost: UserSchema,
 });
@@ -279,6 +284,10 @@ export const WebSocketMessageSchema = z.discriminatedUnion('type', [
     data: UserLeftDataSchema,
   }),
   BaseMessageSchema.extend({
+    type: z.literal('USER_KICKED'),
+    data: UserKickedDataSchema,
+  }),
+  BaseMessageSchema.extend({
     type: z.literal('HOST_CHANGED'),
     data: HostChangedDataSchema,
   }),
@@ -345,6 +354,7 @@ export type AuthSuccessData = z.infer<typeof AuthSuccessDataSchema>;
 export type RoomSuccessData = z.infer<typeof RoomSuccessDataSchema>;
 export type UserJoinedData = z.infer<typeof UserJoinedDataSchema>;
 export type UserLeftData = z.infer<typeof UserLeftDataSchema>;
+export type UserKickedData = z.infer<typeof UserKickedDataSchema>;
 export type HostChangedData = z.infer<typeof HostChangedDataSchema>;
 export type KickedData = z.infer<typeof KickedDataSchema>;
 export type GameStartingData = z.infer<typeof GameStartingDataSchema>;
