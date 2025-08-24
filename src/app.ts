@@ -156,7 +156,7 @@ const server = serve({
     close: (ws: ServerWebSocket<WebSocketData>) => {
       webSocketManager.handleClose(ws);
     },
-    perMessageDeflate: true,
+    perMessageDeflate: false,
   },
   development: isDevelopment,
 });
