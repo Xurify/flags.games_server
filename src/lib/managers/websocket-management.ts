@@ -41,6 +41,7 @@ import { env, isDevelopment } from "../utils/env";
 import { getDifficultySettings } from "../game-logic/main";
 
 const MAX_WEBSOCKET_MESSAGE_BYTES = 128 * 1024; // 128KB
+const MAX_BUFFERED_BYTES = 1 * 1024 * 1024; // 1MB backpressure threshold
 
 export interface MessageDataTypes {
   [WS_MESSAGE_TYPES.GAME_STARTING]: GameStartingData;
@@ -145,33 +146,16 @@ class WebSocketManager {
       if (excludeSet.has(member.id)) return;
 
       const ws = this.getConnection(member.id);
-      if (this.isConnectionValid(ws)) {
-        try {
-          ws!.send(messageString);
-        } catch (error) {
-          logger.error(`Error sending message to user ${member.id}:`, error);
-          this.handleUserDisconnect(member.id);
-        }
-      }
+      this.safeSendToUser(member.id, ws, messageString);
     });
   }
 
   broadcastToUser(userId: string, message: WebSocketMessage): void {
     const ws = this.getConnection(userId);
-    if (!this.isConnectionValid(ws)) {
-      this.handleUserDisconnect(userId);
-      return;
-    }
-
-    try {
-      ws!.send(JSON.stringify({
-        ...message,
-        timestamp: Date.now()
-      }));
-    } catch (error) {
-      logger.error(`Error sending message to user ${userId}:`, error);
-      this.handleUserDisconnect(userId);
-    }
+    this.safeSendToUser(userId, ws, JSON.stringify({
+      ...message,
+      timestamp: Date.now()
+    }));
   }
 
   broadcastToAll(message: WebSocketMessage): void {
@@ -181,15 +165,30 @@ class WebSocketManager {
     });
 
     this.connections.forEach((ws, userId) => {
-      if (this.isConnectionValid(ws)) {
-        try {
-          ws.send(messageString);
-        } catch (error) {
-          logger.error(`Error broadcasting to user ${userId}:`, error);
-          this.handleUserDisconnect(userId);
-        }
-      }
+      this.safeSendToUser(userId, ws, messageString);
     });
+  }
+
+  private safeSendToUser(userId: string, ws: CustomWebSocket | undefined, messageString: string): void {
+    if (!this.isConnectionValid(ws)) {
+      this.handleUserDisconnect(userId);
+      return;
+    }
+
+    const buffered = (ws as unknown as { bufferedAmount?: number }).bufferedAmount || 0;
+    if (buffered > MAX_BUFFERED_BYTES) {
+      logger.warn(`Closing backpressured connection for user ${userId} (buffered=${buffered})`);
+      try { ws!.close(1013, "Backpressure"); } catch {}
+      this.handleUserDisconnect(userId);
+      return;
+    }
+
+    try {
+      ws!.send(messageString);
+    } catch (error) {
+      logger.error(`Error sending message to user ${userId}:`, error);
+      this.handleUserDisconnect(userId);
+    }
   }
 
   handleOpen(ws: ServerWebSocket<WebSocketData>): void {
