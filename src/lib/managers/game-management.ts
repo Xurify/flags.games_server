@@ -40,11 +40,11 @@ class GameManager {
     };
 
     roomsManager.updateGameState(roomId, gameState);
-    
+
     roomsManager.update(roomId, {
-      members: room.members.map((member) => ({ 
-        ...member, 
-        hasAnswered: false, 
+      members: room.members.map((member) => ({
+        ...member,
+        hasAnswered: false,
         score: 0
       })),
     });
@@ -355,7 +355,7 @@ class GameManager {
 
     if (room.host !== userId) return false;
     if (room.members.length < 2) return false;
-    
+
     if (room.gameState.isActive && room.gameState.phase !== "finished") return false;
 
     this.resetGameState(roomId);

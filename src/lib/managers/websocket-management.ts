@@ -3,14 +3,14 @@ import { nanoid } from "nanoid";
 
 import { WebSocketData, CustomWebSocket } from "../../types/entities";
 import { WebSocketMessageSchema, type WebSocketMessage } from "../schemas";
-import { 
+import {
   AuthDataSchema,
   type CreateRoomData,
   type JoinRoomData,
   type UpdateSettingsData,
   type KickUserData,
 } from "../schemas/websockets";
-import { 
+import {
   GameStartingData,
   NewQuestionData,
   AnswerSubmittedData,
@@ -178,7 +178,7 @@ class WebSocketManager {
     const buffered = (ws as unknown as { bufferedAmount?: number }).bufferedAmount || 0;
     if (buffered > MAX_BUFFERED_BYTES) {
       logger.warn(`Closing backpressured connection for user ${userId} (buffered=${buffered})`);
-      try { ws!.close(1013, "Backpressure"); } catch {}
+      try { ws!.close(1013, "Backpressure"); } catch { }
       this.handleUserDisconnect(userId);
       return;
     }
@@ -216,7 +216,7 @@ class WebSocketManager {
           details: { size: payloadBytes, limit: MAX_WEBSOCKET_MESSAGE_BYTES }
         });
         ErrorHandler.handleWebSocketError(ws, error, "message_too_large");
-        try { ws.close(1009, "Message too large"); } catch {}
+        try { ws.close(1009, "Message too large"); } catch { }
         return;
       }
 
@@ -401,7 +401,7 @@ class WebSocketManager {
         this.handleUpdateRoomSettings(ws, message.data);
         break;
       case WS_MESSAGE_TYPES.KICK_USER:
-            this.handleKickUser(ws, message.data);
+        this.handleKickUser(ws, message.data);
         break;
       case WS_MESSAGE_TYPES.LEAVE_ROOM:
         this.handleLeaveRoom(ws);
