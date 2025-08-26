@@ -5,6 +5,7 @@ import { SECURITY_CONFIG, isOriginAllowed, getClientIP } from "../../config/secu
 export class WebSocketSecurity {
     private static suspiciousIPs = new Set<string>();
     private static connectionCounts = new Map<string, number>();
+    private static connectionTimestamps = new Map<string, number[]>();
 
     static validateConnection(_ws: CustomWebSocket, request: Request): {
         allowed: boolean;
@@ -16,6 +17,19 @@ export class WebSocketSecurity {
             return { allowed: false, reason: 'IP blocked' };
         }
 
+        // Clean old connection timestamps (older than 5 minutes)
+        const now = Date.now();
+        const timestamps = this.connectionTimestamps.get(ip) || [];
+        const recentTimestamps = timestamps.filter(ts => now - ts < 5 * 60 * 1000);
+        this.connectionTimestamps.set(ip, recentTimestamps);
+
+        // Check for rapid connection attempts (more than 3 in 1 minute = suspicious)
+        const recentConnections = recentTimestamps.filter(ts => now - ts < 60 * 1000);
+        if (recentConnections.length > 3) {
+            this.suspiciousIPs.add(ip);
+            return { allowed: false, reason: 'Too many rapid connection attempts' };
+        }
+
         const currentConnections = this.connectionCounts.get(ip) || 0;
         if (currentConnections >= SECURITY_CONFIG.RATE_LIMITS.MAX_CONNECTIONS_PER_IP) {
             return { allowed: false, reason: 'Too many connections from IP' };
@@ -25,6 +39,10 @@ export class WebSocketSecurity {
         if (origin && !isOriginAllowed(origin)) {
             return { allowed: false, reason: 'Invalid origin' };
         }
+
+        // Track this connection attempt
+        recentTimestamps.push(now);
+        this.connectionTimestamps.set(ip, recentTimestamps);
 
         return { allowed: true };
     }
