@@ -3,7 +3,7 @@ import { z } from 'zod';
 const EnvSchema = z.object({
   PORT: z.coerce.number().default(3001),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  ADMIN_TOKEN: z.string().optional(),
+  ADMIN_TOKEN: z.string().min(32, "Admin token must be at least 32 characters").optional(),
 });
 
 export const env = EnvSchema.parse({

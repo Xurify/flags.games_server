@@ -1,4 +1,5 @@
 import DOMPurify from 'isomorphic-dompurify';
+import { logger } from '../logger';
 
 export class InputSanitizer {
     private static readonly PURIFY_CONFIG = {
@@ -45,7 +46,11 @@ export class InputSanitizer {
             /(\bOR\b|\bAND\b).*(=|<|>)/i
         ];
 
-        return sqlPatterns.some(pattern => pattern.test(input));
+        const detected = sqlPatterns.some(pattern => pattern.test(input));
+        if (detected) {
+            logger.warn('SQL injection attempt detected', { input: input.substring(0, 100) });
+        }
+        return detected;
     }
 
     static containsXSS(input: string): boolean {
@@ -57,7 +62,11 @@ export class InputSanitizer {
             /<[^>]*>/g
         ];
 
-        return xssPatterns.some(pattern => pattern.test(input));
+        const detected = xssPatterns.some(pattern => pattern.test(input));
+        if (detected) {
+            logger.warn('XSS attempt detected', { input: input.substring(0, 100) });
+        }
+        return detected;
     }
 
     static isInputSafe(input: string): { safe: boolean; reason?: string } {

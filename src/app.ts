@@ -18,6 +18,18 @@ const createJsonResponse = (data: unknown, status = 200, origin: string | null =
     headers: { ...getCorsHeaders(origin), "content-type": "application/json" }
   });
 
+// Add admin check middleware
+const requireAdmin = (req: Request) => {
+  const adminToken = req.headers.get('x-admin-token');
+  if (!adminToken || adminToken !== env.ADMIN_TOKEN) {
+    throw new AppError({
+      code: ErrorCode.AUTHORIZATION_ERROR,
+      message: "Admin access required",
+      statusCode: 403,
+    });
+  }
+};
+
 const handleApiError = (error: unknown, endpoint: string, origin: string | null = null) => {
   logger.error(`Error in ${endpoint}`, error);
 
@@ -75,6 +87,9 @@ const server = serve({
       GET: withMiddleware(async (req) => {
         const origin = req.headers.get('origin');
         try {
+          // Require admin access for full room data
+          requireAdmin(req);
+          
           return createJsonResponse({
             rooms: Object.fromEntries(roomsManager.rooms.entries()),
             count: roomsManager.rooms.size,
@@ -105,6 +120,9 @@ const server = serve({
       GET: withMiddleware(async (req) => {
         const origin = req.headers.get('origin');
         try {
+          // Require admin access for user data
+          requireAdmin(req);
+          
           return createJsonResponse({
             users: Object.fromEntries(usersManager.users.entries()),
             count: usersManager.users.size,
