@@ -9,7 +9,7 @@ export const SECURITY_CONFIG = {
   },
 
   CORS: {
-    ALLOW_CREDENTIALS: true,
+    ALLOW_CREDENTIALS: false,
     ALLOWED_METHODS: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     ALLOWED_HEADERS: ["Content-Type", "Authorization", "X-Requested-With"],
   },
