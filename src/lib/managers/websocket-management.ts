@@ -39,9 +39,29 @@ import { usersManager } from "./user-management";
 import { gameManager } from "./game-management";
 import { env, isDevelopment } from "../utils/env";
 import { getDifficultySettings } from "../game-logic/main";
+import { SECURITY_CONFIG } from "../config/security";
+import { FixedWindowRateLimiter } from "../utils/security/rate-limit";
 
 const MAX_WEBSOCKET_MESSAGE_BYTES = 128 * 1024; // 128KB
 const MAX_BUFFERED_BYTES = 1 * 1024 * 1024; // 1MB backpressure threshold
+
+// Per-IP rate limiters (fixed window per minute)
+const messageLimiter = new FixedWindowRateLimiter(
+  SECURITY_CONFIG.RATE_LIMITS.WS.MESSAGES_PER_MINUTE,
+  60_000
+);
+const authLimiter = new FixedWindowRateLimiter(
+  SECURITY_CONFIG.RATE_LIMITS.WS.AUTH_PER_MINUTE,
+  60_000
+);
+const joinLimiter = new FixedWindowRateLimiter(
+  SECURITY_CONFIG.RATE_LIMITS.WS.JOIN_PER_MINUTE,
+  60_000
+);
+const createRoomLimiter = new FixedWindowRateLimiter(
+  SECURITY_CONFIG.RATE_LIMITS.WS.CREATE_ROOM_PER_MINUTE,
+  60_000
+);
 
 export interface MessageDataTypes {
   [WS_MESSAGE_TYPES.GAME_STARTING]: GameStartingData;
@@ -204,6 +224,17 @@ class WebSocketManager {
 
   async handleMessage(ws: ServerWebSocket<WebSocketData>, message: string | Buffer): Promise<void> {
     try {
+      const ipKey = (ws.data?.ipAddress || "unknown");
+      if (!messageLimiter.allow(ipKey)) {
+        const error = new AppError({
+          code: ErrorCode.RATE_LIMIT_EXCEEDED,
+          message: "Too many messages",
+          statusCode: 429,
+        });
+        ErrorHandler.handleWebSocketError(ws, error, "rate_limit_message");
+        return;
+      }
+
       const payloadBytes = typeof message === 'string'
         ? Buffer.byteLength(message)
         : (message as Buffer).length;
@@ -247,6 +278,15 @@ class WebSocketManager {
       }
 
       if (!ws.data.authenticated) {
+        if (!authLimiter.allow(ipKey)) {
+          const error = new AppError({
+            code: ErrorCode.RATE_LIMIT_EXCEEDED,
+            message: "Too many auth attempts",
+            statusCode: 429,
+          });
+          ErrorHandler.handleWebSocketError(ws, error, "rate_limit_auth");
+          return;
+        }
         await this.handleAuthentication(ws, parsedMessage);
         return;
       }
@@ -532,6 +572,12 @@ class WebSocketManager {
   }
 
   private handleJoinRoom(ws: ServerWebSocket<WebSocketData>, data: JoinRoomData): void {
+    const ipKey = (ws.data?.ipAddress || "unknown");
+    if (!joinLimiter.allow(ipKey)) {
+      const error = ErrorHandler.createRateLimitError();
+      ErrorHandler.handleWebSocketError(ws, error, "rate_limit_join");
+      return;
+    }
     const { inviteCode, username } = data;
     const userId = ws.data.userId;
 
@@ -604,6 +650,12 @@ class WebSocketManager {
   }
 
   private handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: CreateRoomData): void {
+    const ipKey = (ws.data?.ipAddress || "unknown");
+    if (!createRoomLimiter.allow(ipKey)) {
+      const error = ErrorHandler.createRateLimitError();
+      ErrorHandler.handleWebSocketError(ws, error, "rate_limit_create");
+      return;
+    }
     const { username, settings } = data;
     const userId = ws.data.userId;
 

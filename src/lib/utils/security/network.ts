@@ -29,14 +29,42 @@ export class WebSocketSecurity {
         return { allowed: true };
     }
 
+    static validateUpgradeRequest(request: Request): { allowed: boolean; reason?: string } {
+        const ip = getClientIP(request);
+
+        if (this.suspiciousIPs.has(ip)) {
+            return { allowed: false, reason: 'IP blocked' };
+        }
+
+        const currentConnections = this.connectionCounts.get(ip) || 0;
+        if (currentConnections >= SECURITY_CONFIG.RATE_LIMITS.MAX_CONNECTIONS_PER_IP) {
+            return { allowed: false, reason: 'Too many connections from IP' };
+        }
+
+        const origin = request.headers.get('origin');
+        if (origin && !isOriginAllowed(origin)) {
+            return { allowed: false, reason: 'Invalid origin' };
+        }
+
+        return { allowed: true };
+    }
+
     static trackConnection(_ws: CustomWebSocket, request: Request): void {
         const ip = getClientIP(request);
+        this.trackConnectionByIP(ip);
+    }
+
+    static trackConnectionByIP(ip: string): void {
         const current = this.connectionCounts.get(ip) || 0;
         this.connectionCounts.set(ip, current + 1);
     }
 
     static untrackConnection(request: Request): void {
         const ip = getClientIP(request);
+        this.untrackConnectionByIP(ip);
+    }
+
+    static untrackConnectionByIP(ip: string): void {
         const current = this.connectionCounts.get(ip) || 0;
         if (current <= 1) {
             this.connectionCounts.delete(ip);

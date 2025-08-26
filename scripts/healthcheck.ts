@@ -4,6 +4,11 @@ const controller = new AbortController();
 const timeoutMs = 3000;
 const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
+interface HealthzResponse {
+	status?: string;
+	timestamp?: string;
+}
+
 async function main(): Promise<number> {
 	try {
 		const port = Number.parseInt(process.env.PORT || String(DEFAULT_PORT), 10);
@@ -12,7 +17,7 @@ async function main(): Promise<number> {
 		const res = await fetch(url, {
 			method: 'GET',
 			headers: {
-				'accept': 'application/json',
+				accept: 'application/json',
 				'user-agent': 'docker-healthcheck'
 			},
 			signal: controller.signal
@@ -22,7 +27,7 @@ async function main(): Promise<number> {
 			return 1;
 		}
 
-		const data = await res.json().catch(() => null) as any;
+		const data = (await res.json().catch(() => null)) as HealthzResponse | null;
 		if (!data || data.status !== 'ok') {
 			return 1;
 		}

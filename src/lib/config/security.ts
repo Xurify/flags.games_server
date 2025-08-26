@@ -5,7 +5,14 @@ export const SECURITY_CONFIG = {
 
   RATE_LIMITS: {
     MAX_CONNECTIONS_PER_IP: 1,
-    MESSAGE_SIZE_LIMIT: 10000, // 10KB
+    MESSAGE_SIZE_LIMIT: 10_000, // 10KB
+    WS: {
+      HANDSHAKES_PER_MINUTE: 30,
+      AUTH_PER_MINUTE: 10,
+      JOIN_PER_MINUTE: 20,
+      CREATE_ROOM_PER_MINUTE: 10,
+      MESSAGES_PER_MINUTE: 120,
+    },
   },
 
   CORS: {
@@ -16,7 +23,7 @@ export const SECURITY_CONFIG = {
 };
 
 export const isOriginAllowed = (origin: string | null): boolean => {
-  if (!origin) return isDevelopment;
+  if (!origin) { return isDevelopment; }
   return SECURITY_CONFIG.ALLOWED_ORIGINS.includes(origin);
 };
 
