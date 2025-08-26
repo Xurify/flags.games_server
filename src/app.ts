@@ -11,6 +11,14 @@ import { logger } from "./lib/utils/logger";
 import { ServerWebSocket } from "bun";
 import { env, isDevelopment } from "./lib/utils/env";
 import { WebSocketData } from "./types/entities";
+import { SECURITY_CONFIG, getClientIP } from "./lib/config/security";
+import { WebSocketSecurity } from "./lib/utils/security/network";
+import { FixedWindowRateLimiter } from "./lib/utils/security/rate-limit";
+
+const wsHandshakeLimiter = new FixedWindowRateLimiter(
+  SECURITY_CONFIG.RATE_LIMITS.WS.HANDSHAKES_PER_MINUTE,
+  60_000
+);
 
 const createJsonResponse = (data: unknown, status = 200, origin: string | null = null) =>
   new Response(JSON.stringify(data), {
@@ -138,7 +146,19 @@ const server = serve({
     },
     "/ws": {
       async GET(req, server) {
-        const upgraded = server.upgrade(req);
+        const ip = getClientIP(req);
+
+        if (!wsHandshakeLimiter.allow(ip)) {
+          return new Response("Too Many Requests", { status: 429 });
+        }
+
+        const security = WebSocketSecurity.validateUpgradeRequest(req);
+        if (!security.allowed) {
+          logger.warn(`WS upgrade rejected from ${ip}: ${security.reason}`);
+          return new Response("Forbidden", { status: 403 });
+        }
+
+        const upgraded = server.upgrade(req, { data: { userId: null, roomId: null, isAdmin: false, authenticated: false, ipAddress: ip } as WebSocketData });
         if (!upgraded) {
           return new Response("WebSocket upgrade failed", { status: 400 });
         }
@@ -148,12 +168,18 @@ const server = serve({
   },
   websocket: {
     open: (ws: ServerWebSocket<WebSocketData>) => {
+      if (ws.data?.ipAddress) {
+        WebSocketSecurity.trackConnectionByIP(ws.data.ipAddress);
+      }
       webSocketManager.handleOpen(ws);
     },
     message: (ws: ServerWebSocket<WebSocketData>, message: string | Buffer) => {
       webSocketManager.handleMessage(ws, message);
     },
     close: (ws: ServerWebSocket<WebSocketData>) => {
+      if (ws.data?.ipAddress) {
+        WebSocketSecurity.untrackConnectionByIP(ws.data.ipAddress);
+      }
       webSocketManager.handleClose(ws);
     },
     perMessageDeflate: false,

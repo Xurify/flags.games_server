@@ -5,6 +5,6 @@
     "target": "es6",
     "moduleResolution": "nodenext",
 
-    "strictNullChecks": true,
+    "strictNullChecks": true
   }
 }
