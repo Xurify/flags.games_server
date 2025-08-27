@@ -16,6 +16,12 @@ export const getCorsHeaders = (origin: string | null): Record<string, string> =>
     "Access-Control-Allow-Headers": SECURITY_CONFIG.CORS.ALLOWED_HEADERS.join(", "),
     "Access-Control-Allow-Credentials": SECURITY_CONFIG.CORS.ALLOW_CREDENTIALS.toString(),
     "Vary": "Origin",
+    // Security headers
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' wss: ws:;",
   };
 };
 

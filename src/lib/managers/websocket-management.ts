@@ -39,6 +39,7 @@ import { usersManager } from "./user-management";
 import { gameManager } from "./game-management";
 import { env, isDevelopment } from "../utils/env";
 import { getDifficultySettings } from "../game-logic/main";
+import { InputSanitizer } from "../utils/input-sanitizer";
 
 const MAX_WEBSOCKET_MESSAGE_BYTES = 128 * 1024; // 128KB
 const MAX_BUFFERED_BYTES = 1 * 1024 * 1024; // 1MB backpressure threshold
@@ -72,9 +73,13 @@ interface WebSocketConfig {
   };
 }
 
-class WebSocketManager {
+export class WebSocketManager {
   public connections = new Map<string, CustomWebSocket>();
   private heartbeatManager: HeartbeatManager;
+
+  // Add token storage
+  private activeTokens = new Map<string, string>(); // token -> userId
+  private userTokens = new Map<string, string>(); // userId -> token
 
   constructor(config: WebSocketConfig = {}) {
     this.heartbeatManager = new HeartbeatManager(
@@ -328,11 +333,50 @@ class WebSocketManager {
       return;
     }
 
+    // NEW: Validate token or create new user session
+    let userId: string;
+    
+    // Check if token exists in our active tokens
+    const existingUserId = this.activeTokens.get(token);
+    if (existingUserId) {
+      userId = existingUserId;
+    } else {
+      // For new connections, treat the token as a username/identifier
+      // and generate a secure session token
+      const sanitizedUsername = InputSanitizer.sanitizeUsername(token);
+      if (!sanitizedUsername || sanitizedUsername.length < 1) {
+        const error = new AppError({
+          code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
+          message: "Invalid username format.",
+          statusCode: 400,
+        });
+        ErrorHandler.handleWebSocketError(ws, error, "invalid_username");
+        ws.close(4003, "Invalid username");
+        return;
+      }
+      
+      userId = nanoid(); // Generate secure user ID
+      const sessionToken = nanoid(32); // Generate secure session token
+      
+      // Store the mapping
+      this.activeTokens.set(sessionToken, userId);
+      this.userTokens.set(userId, sessionToken);
+      
+      // Send the new session token back to client
+      ws.send(JSON.stringify({
+        type: 'SESSION_TOKEN',
+        data: { sessionToken, userId }
+      }));
+    }
+
     const { adminToken } = validation.data as { token: string; adminToken?: string };
-    ws.data.userId = token;
+    ws.data.userId = userId;
     ws.data.authenticated = true;
 
-    if (adminToken && typeof adminToken === 'string' && (env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN)) {
+    // Admin token validation remains the same but add additional security
+    if (adminToken && typeof adminToken === 'string' && env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN) {
+      // Log admin access attempts
+      logger.warn(`Admin access granted for user ${userId} from origin ${ws.data.origin || 'unknown'}`);
       ws.data.isAdmin = true;
     }
 
@@ -477,6 +521,9 @@ class WebSocketManager {
     }
 
     this.removeConnectionAndUser(userId);
+
+    // Clean up tokens
+    this.revokeUserToken(userId);
   }
 
   getConnectionStats(): {
@@ -746,6 +793,15 @@ class WebSocketManager {
         targetWs.data.roomId = null;
         targetWs.data.isAdmin = false;
       }
+    }
+  }
+
+  // Add method to revoke tokens
+  public revokeUserToken(userId: string): void {
+    const token = this.userTokens.get(userId);
+    if (token) {
+      this.activeTokens.delete(token);
+      this.userTokens.delete(userId);
     }
   }
 }
