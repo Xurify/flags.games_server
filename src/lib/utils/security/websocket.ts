@@ -2,16 +2,20 @@ import { CustomWebSocket } from "../../../types/entities";
 import { SECURITY_CONFIG } from "./config";
 import { isOriginAllowed, getClientIPAddress } from "./network";
 import { parseCookies } from "./cookies";
+import { logger } from "../logger";
 
 export class WebSocketSecurity {
     private static suspiciousIPs = new Set<string>();
     private static connectionCounts = new Map<string, number>();
 
-    static validateConnection(_ws: CustomWebSocket, request: Request): {
+    static validateConnection(
+        request: Request,
+        ipAddressOverride?: string
+    ): {
         allowed: boolean;
         reason?: string;
     } {
-        const ipAddress = getClientIPAddress(request);
+        const ipAddress = ipAddressOverride || getClientIPAddress(request);
 
         if (this.suspiciousIPs.has(ipAddress)) {
             return { allowed: false, reason: 'This IP has been blocked' };
@@ -19,6 +23,7 @@ export class WebSocketSecurity {
 
         const currentConnections = this.connectionCounts.get(ipAddress) || 0;
         if (currentConnections >= SECURITY_CONFIG.RATE_LIMITS.MAX_CONNECTIONS_PER_IP) {
+            logger.warn(`Too many connections from IP: ${ipAddress}`);
             return { allowed: false, reason: 'Too many connections from IP' };
         }
 

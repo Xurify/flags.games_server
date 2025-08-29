@@ -142,7 +142,10 @@ const server = serve({
     },
     "/ws": {
       async GET(req, server) {
-        const check = WebSocketSecurity.validateConnection(undefined as any, req);
+        const serverIp = server.requestIP(req);
+        const ipAddress = serverIp?.address || getClientIPAddress(req) || undefined;
+
+        const check = WebSocketSecurity.validateConnection(req, ipAddress);
         if (!check.allowed) {
           return new Response(check.reason || "Forbidden", { status: 403 });
         }
@@ -157,8 +160,6 @@ const server = serve({
         if (!userId) {
           return new Response("Unauthorized", { status: 401 });
         }
-
-        const ipAddress = getClientIPAddress(req);
 
         const upgraded = server.upgrade(req, {
           data: {
