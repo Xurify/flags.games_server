@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { InputSanitizer } from './input-sanitizer';
-import { isOriginAllowed, SECURITY_CONFIG } from '../../config/security';
+import { isOriginAllowed } from './network';
 import { logger } from '../logger';
 
 interface ValidationResult {

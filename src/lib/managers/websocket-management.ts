@@ -4,11 +4,11 @@ import { nanoid } from "nanoid";
 import { WebSocketData, CustomWebSocket } from "../../types/entities";
 import { WebSocketMessageSchema, type WebSocketMessage } from "../schemas";
 import {
-  AuthDataSchema,
   type CreateRoomData,
   type JoinRoomData,
   type UpdateSettingsData,
   type KickUserData,
+  Room,
 } from "../schemas/websockets";
 import {
   GameStartingData,
@@ -30,7 +30,7 @@ import {
 import { safeValidate } from "../utils/validation";
 import { DEFAULT_DIFFICULTY } from "../constants/game-constants";
 import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
-import { WebSocketSecurity } from "../utils/security/network";
+import { WebSocketSecurity } from "../utils/security/websocket";
 import { ErrorHandler, AppError, ErrorCode } from "../utils/error-handler";
 import { logger } from "../utils/logger";
 import { HeartbeatManager } from "./heartbeat-management";
@@ -195,11 +195,63 @@ class WebSocketManager {
     logger.info("WebSocket connection opened");
 
     ws.data = {
-      userId: null,
-      roomId: null,
-      isAdmin: false,
-      authenticated: false,
+      userId: ws.data?.userId ?? null,
+      roomId: ws.data?.roomId ?? null,
+      isAdmin: ws.data?.isAdmin ?? false,
+      authenticated: ws.data?.authenticated ?? true,
+      ipAddress: ws.data?.ipAddress,
     };
+
+    const userId = ws.data.userId;
+    if (!userId) {
+      try { ws.close(4001, "Unauthorized"); } catch {}
+      return;
+    }
+
+    const existingUser = usersManager.getUser(userId);
+    if (!existingUser) {
+      usersManager.createUser({
+        id: userId,
+        username: "",
+        roomId: "",
+        socketId: nanoid(),
+        isAdmin: false,
+      });
+    }
+
+    this.addConnection(userId, ws);
+
+    const user = usersManager.getUser(userId);
+
+    let room: Room | null = null;
+    if (user && user.roomId !== "") {
+      room = roomsManager.getRoom(user.roomId) || null;
+      ws.data.roomId = user.roomId;
+    } else if (ws.data?.roomId) {
+      room = roomsManager.getRoom(ws.data.roomId) || null;
+    }
+
+    if (!room) {
+      const allRooms = Array.from(roomsManager.rooms.values());
+      const userAsHost = allRooms.find(room => room.host === userId);
+      if (userAsHost) {
+        if (user && (!user.roomId || user.roomId === "")) {
+          usersManager.updateUser(userId, { roomId: userAsHost.id });
+          room = userAsHost;
+          ws.data.roomId = userAsHost.id;
+        }
+        const userInMembers = userAsHost.members.find(member => member.id === userId);
+        if (!userInMembers && user) {
+          roomsManager.addUserToRoom(userAsHost.id, user);
+          room = roomsManager.getRoom(userAsHost.id) || userAsHost;
+        }
+      }
+    }
+
+    ws.send(JSON.stringify({
+      type: WS_MESSAGE_TYPES.AUTH_SUCCESS,
+      data: { userId: userId, isAdmin: ws.data.isAdmin, user, room },
+    }));
   }
 
   async handleMessage(ws: ServerWebSocket<WebSocketData>, message: string | Buffer): Promise<void> {
@@ -246,11 +298,6 @@ class WebSocketManager {
         return;
       }
 
-      if (!ws.data.authenticated) {
-        await this.handleAuthentication(ws, parsedMessage);
-        return;
-      }
-
       const securityCheck = WebSocketSecurity.validateMessage(parsedMessage);
       if (!securityCheck.valid) {
         const error = new AppError({
@@ -290,97 +337,6 @@ class WebSocketManager {
     if (ws.data?.userId) {
       this.handleUserDisconnect(ws.data.userId);
     }
-  }
-
-  private async handleAuthentication(ws: ServerWebSocket<WebSocketData>, parsedMessage: unknown): Promise<void> {
-    if (!parsedMessage || typeof parsedMessage !== 'object' || (parsedMessage as any).type !== WS_MESSAGE_TYPES.AUTH) {
-      const error = new AppError({
-        code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
-        message: "Authentication required before any other action.",
-        statusCode: 401,
-      });
-      ErrorHandler.handleWebSocketError(ws, error, "auth_required");
-      ws.close(4001, "Authentication required");
-      return;
-    }
-
-    const validation = safeValidate(AuthDataSchema, (parsedMessage as any).data);
-    if (!validation.success) {
-      const error = new AppError({
-        code: ErrorCode.VALIDATION_ERROR,
-        message: validation.error || "Invalid auth message format",
-        statusCode: 400,
-      });
-      ErrorHandler.handleWebSocketError(ws, error, "auth_schema_validation");
-      ws.close(4002, "Invalid auth message");
-      return;
-    }
-
-    const { token } = validation.data as { token: string; adminToken?: string };
-    if (!token || typeof token !== 'string') {
-      const error = new AppError({
-        code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
-        message: "Invalid or missing token.",
-        statusCode: 401,
-      });
-      ErrorHandler.handleWebSocketError(ws, error, "auth_token_invalid");
-      ws.close(4003, "Invalid token");
-      return;
-    }
-
-    const { adminToken } = validation.data as { token: string; adminToken?: string };
-    ws.data.userId = token;
-    ws.data.authenticated = true;
-
-    if (adminToken && typeof adminToken === 'string' && (env.ADMIN_TOKEN && adminToken === env.ADMIN_TOKEN)) {
-      ws.data.isAdmin = true;
-    }
-
-    const existingUser = usersManager.getUser(ws.data.userId);
-    if (!existingUser) {
-      usersManager.createUser({
-        id: ws.data.userId,
-        username: "",
-        roomId: "",
-        socketId: nanoid(),
-        isAdmin: ws.data.isAdmin,
-      });
-    } else {
-      usersManager.updateUser(ws.data.userId, { isAdmin: ws.data.isAdmin });
-    }
-
-    this.addConnection(ws.data.userId, ws);
-
-    const user = usersManager.getUser(ws.data.userId);
-
-    let room = null;
-    if (user && user.roomId && user.roomId !== "") {
-      room = roomsManager.getRoom(user.roomId);
-      ws.data.roomId = user.roomId;
-    } else {
-      room = ws.data?.roomId ? roomsManager.getRoom(ws.data.roomId) : null;
-    }
-
-    const allRooms = Array.from(roomsManager.rooms.values());
-    const userAsHost = allRooms.find(room => room.host === ws.data.userId);
-    if (userAsHost) {
-      if (user && (!user.roomId || user.roomId === "")) {
-        usersManager.updateUser(ws.data.userId, { roomId: userAsHost.id });
-        room = userAsHost;
-        ws.data.roomId = userAsHost.id;
-      }
-
-      const userInMembers = userAsHost.members.find(member => member.id === ws.data.userId);
-      if (!userInMembers && user) {
-        roomsManager.addUserToRoom(userAsHost.id, user);
-        room = roomsManager.getRoom(userAsHost.id);
-      }
-    }
-
-    ws.send(JSON.stringify({
-      type: WS_MESSAGE_TYPES.AUTH_SUCCESS,
-      data: { userId: ws.data.userId, isAdmin: ws.data.isAdmin, user, room },
-    }));
   }
 
   private async routeMessage(ws: ServerWebSocket<WebSocketData>, message: WebSocketMessage): Promise<void> {
@@ -477,32 +433,6 @@ class WebSocketManager {
     }
 
     this.removeConnectionAndUser(userId);
-  }
-
-  getConnectionStats(): {
-    totalConnections: number;
-    activeConnections: number;
-    deadConnections: number;
-    heartbeatStats: any;
-  } {
-    const totalConnections = this.connections.size;
-    let activeConnections = 0;
-    let deadConnections = 0;
-
-    this.connections.forEach((ws) => {
-      if (this.isConnectionValid(ws)) {
-        activeConnections++;
-      } else {
-        deadConnections++;
-      }
-    });
-
-    return {
-      totalConnections,
-      activeConnections,
-      deadConnections,
-      heartbeatStats: this.heartbeatManager.getStats(),
-    };
   }
 
   cleanupDeadConnections(): void {

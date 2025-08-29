@@ -1,4 +1,5 @@
-import { SECURITY_CONFIG, isOriginAllowed } from '../../config/security';
+import { SECURITY_CONFIG } from './config';
+import { isOriginAllowed } from './network';
 import { logger } from '../logger';
 
 export const getCorsHeaders = (origin: string | null): Record<string, string> => {

@@ -11,6 +11,9 @@ import { logger } from "./lib/utils/logger";
 import { ServerWebSocket } from "bun";
 import { env, isDevelopment } from "./lib/utils/env";
 import { WebSocketData } from "./types/entities";
+import { WebSocketSecurity } from "./lib/utils/security/websocket";
+import { getClientIPAddress } from "./lib/utils/security/network";
+import { parseCookies } from "./lib/utils/security/cookies";
 
 const createJsonResponse = (data: unknown, status = 200, origin: string | null = null) =>
   new Response(JSON.stringify(data), {
@@ -52,6 +55,7 @@ const withMiddleware = <T extends Request = Request>(handler: (req: T) => Promis
 const server = serve({
   port: env.PORT,
   routes: {
+    "/api/status": new Response("OK", { status: 200 }),
     "/api/healthz": {
       async OPTIONS(req) {
         return handlePreflightRequest(req);
@@ -138,10 +142,37 @@ const server = serve({
     },
     "/ws": {
       async GET(req, server) {
-        const upgraded = server.upgrade(req);
+        const check = WebSocketSecurity.validateConnection(undefined as any, req);
+        if (!check.allowed) {
+          return new Response(check.reason || "Forbidden", { status: 403 });
+        }
+        
+        const cookies = parseCookies(req.headers.get('cookie'));
+        const session = cookies['session_token'];
+        let userId: string | null = null;
+        if (session) {
+          userId = session;
+        }
+
+        if (!userId) {
+          return new Response("Unauthorized", { status: 401 });
+        }
+
+        const ipAddress = getClientIPAddress(req);
+
+        const upgraded = server.upgrade(req, {
+          data: {
+            userId,
+            roomId: null,
+            isAdmin: false,
+            authenticated: true,
+            ipAddress,
+          } satisfies WebSocketData
+        });
         if (!upgraded) {
           return new Response("WebSocket upgrade failed", { status: 400 });
         }
+        WebSocketSecurity.trackConnection(undefined as any, req);
         return undefined;
       },
     },
@@ -155,6 +186,9 @@ const server = serve({
     },
     close: (ws: ServerWebSocket<WebSocketData>) => {
       webSocketManager.handleClose(ws);
+      if (ws.data?.ipAddress) {
+        try { (WebSocketSecurity as any).untrackByIp?.(ws.data.ipAddress); } catch {}
+      }
     },
     perMessageDeflate: false,
   },

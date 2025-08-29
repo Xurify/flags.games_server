@@ -39,10 +39,6 @@ export const KickUserDataSchema = z.object({
   userId: UserIdSchema,
 });
 
-export const AuthDataSchema = z.object({
-  token: z.string().min(1),
-  adminToken: z.string().optional(),
-});
 
 export const UserSchema = z.object({
   id: UserIdSchema,
@@ -228,10 +224,6 @@ export const ErrorDataSchema = z.object({
 export const WebSocketMessageSchema = z.discriminatedUnion('type', [
   // Client-to-server messages
   BaseMessageSchema.extend({
-    type: z.literal('AUTH'),
-    data: AuthDataSchema,
-  }),
-  BaseMessageSchema.extend({
     type: z.literal('CREATE_ROOM'),
     data: CreateRoomDataSchema,
   }),
@@ -343,7 +335,6 @@ export type JoinRoomData = z.infer<typeof JoinRoomDataSchema>;
 export type SubmitAnswerData = z.infer<typeof SubmitAnswerDataSchema>;
 export type UpdateSettingsData = z.infer<typeof UpdateSettingsDataSchema>;
 export type KickUserData = z.infer<typeof KickUserDataSchema>;
-export type AuthData = z.infer<typeof AuthDataSchema>;
 export type User = z.infer<typeof UserSchema>;
 export type GameQuestion = z.infer<typeof GameQuestionSchema>;
 export type GameAnswer = z.infer<typeof GameAnswerSchema>;
