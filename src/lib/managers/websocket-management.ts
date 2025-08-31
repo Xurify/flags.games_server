@@ -39,6 +39,7 @@ import { usersManager } from "./user-management";
 import { gameManager } from "./game-management";
 import { env, isDevelopment } from "../utils/env";
 import { getDifficultySettings } from "../game-logic/main";
+import { rateLimiter } from "../utils/security/rate-limiter";
 
 const MAX_WEBSOCKET_MESSAGE_BYTES = 128 * 1024; // 128KB
 const MAX_BUFFERED_BYTES = 1 * 1024 * 1024; // 1MB backpressure threshold
@@ -351,6 +352,20 @@ class WebSocketManager {
         break;
       case WS_MESSAGE_TYPES.SUBMIT_ANSWER:
         if (!userId || !roomId) return;
+        {
+          const result = rateLimiter.consume('SUBMIT_ANSWER', { userId });
+          if (!result.allowed) {
+            const error = ErrorHandler.createRateLimitError(result.retryAfter, {
+              action: 'SUBMIT_ANSWER',
+              remaining: result.remaining,
+              resetTime: result.resetTime,
+              ...(result.limit !== undefined ? { limit: result.limit } : {}),
+              ...(result.windowMs !== undefined ? { windowMs: result.windowMs } : {}),
+            });
+            ErrorHandler.handleWebSocketError(ws, error, 'rate_limit_submit_answer');
+            return;
+          }
+        }
         gameManager.submitAnswer(roomId, userId, message.data.answer);
         break;
       case WS_MESSAGE_TYPES.UPDATE_ROOM_SETTINGS:
@@ -364,7 +379,20 @@ class WebSocketManager {
         break;
       case WS_MESSAGE_TYPES.START_GAME:
         if (!userId || !roomId) return;
-
+        {
+          const result = rateLimiter.consume('START_GAME', { userId });
+          if (!result.allowed) {
+            const error = ErrorHandler.createRateLimitError(result.retryAfter, {
+              action: 'START_GAME',
+              remaining: result.remaining,
+              resetTime: result.resetTime,
+              ...(result.limit !== undefined ? { limit: result.limit } : {}),
+              ...(result.windowMs !== undefined ? { windowMs: result.windowMs } : {}),
+            });
+            ErrorHandler.handleWebSocketError(ws, error, 'rate_limit_start_game');
+            return;
+          }
+        }
         const success = await gameManager.startGame(roomId, userId);
         if (!success) {
           const error = ErrorHandler.createPermissionError("Cannot start game - check permissions and player count");
@@ -471,6 +499,21 @@ class WebSocketManager {
       return;
     }
 
+    {
+      const result = rateLimiter.consume('JOIN_ROOM', { userId });
+      if (!result.allowed) {
+        const error = ErrorHandler.createRateLimitError(result.retryAfter, {
+          action: 'JOIN_ROOM',
+          remaining: result.remaining,
+          resetTime: result.resetTime,
+          ...(result.limit !== undefined ? { limit: result.limit } : {}),
+          ...(result.windowMs !== undefined ? { windowMs: result.windowMs } : {}),
+        });
+        ErrorHandler.handleWebSocketError(ws, error, 'rate_limit_join_room');
+        return;
+      }
+    }
+
     if (ws.data.roomId) {
       const error = ErrorHandler.createRoomError("User already in a room", ErrorCode.USER_ALREADY_IN_ROOM);
       ErrorHandler.handleWebSocketError(ws, error, "join_room");
@@ -547,6 +590,21 @@ class WebSocketManager {
       const error = ErrorHandler.createRoomError("User already in a room", ErrorCode.USER_ALREADY_IN_ROOM);
       ErrorHandler.handleWebSocketError(ws, error, "create_room");
       return;
+    }
+
+    {
+      const result = rateLimiter.consume('CREATE_ROOM', { userId });
+      if (!result.allowed) {
+        const error = ErrorHandler.createRateLimitError(result.retryAfter, {
+          action: 'CREATE_ROOM',
+          remaining: result.remaining,
+          resetTime: result.resetTime,
+          ...(result.limit !== undefined ? { limit: result.limit } : {}),
+          ...(result.windowMs !== undefined ? { windowMs: result.windowMs } : {}),
+        });
+        ErrorHandler.handleWebSocketError(ws, error, 'rate_limit_create_room');
+        return;
+      }
     }
 
     const roomId = nanoid();

@@ -164,7 +164,10 @@ export class ErrorHandler {
         data: {
           code: appError.code,
           message: appError.message,
-          timestamp: appError.timestamp
+          timestamp: appError.timestamp,
+          ...(appError.details && {
+            details: appError.details
+          })
         }
       }));
     } catch (sendError) {
@@ -249,12 +252,15 @@ export class ErrorHandler {
     });
   }
 
-  static createRateLimitError(retryAfter?: number): AppError {
+  static createRateLimitError(retryAfter?: number, details?: Record<string, any>): AppError {
     return new AppError({
       code: ErrorCode.RATE_LIMIT_EXCEEDED,
       message: 'Rate limit exceeded',
       statusCode: 429,
-      details: retryAfter ? { retryAfter } : undefined
+      details: {
+        ...(retryAfter !== undefined ? { retryAfter } : {}),
+        ...(details || {})
+      }
     });
   }
 
