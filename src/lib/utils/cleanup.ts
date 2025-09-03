@@ -2,6 +2,9 @@ import { roomsManager } from '../managers/room-management';
 import { usersManager } from '../managers/user-management';
 import { gameManager } from '../managers/game-management';
 import { logger } from './logger';
+import { MAX_ROOM_LIFETIME_MS } from '../constants/game-constants';
+import { webSocketManager } from '../managers/websocket-management';
+import { WS_MESSAGE_TYPES } from '../constants/ws-message-types';
 
 interface CleanupConfig {
   interval: number; // milliseconds
@@ -72,12 +75,15 @@ class CleanupService {
     logger.debug('Starting cleanup cycle at:', new Date().toISOString());
 
     try {
-      const [removedUsers, removedRooms] = await Promise.all([
+      const [removedUsers, removedEmptyRooms, removedExpiredRooms] = await Promise.all([
         this.cleanupInactiveUsers(),
         this.cleanupEmptyRooms(),
+        this.cleanupExpiredRooms(),
       ]);
 
       const duration = Date.now() - startTime;
+      const removedRooms = removedEmptyRooms + removedExpiredRooms;
+      
       this.logCleanupResults({ removedUsers, removedRooms, duration });
 
       return { removedUsers, removedRooms, duration };
@@ -138,6 +144,52 @@ class CleanupService {
     }
 
     return emptyRooms.length;
+  }
+
+  cleanupExpiredRooms(): number {
+    const now = Date.now();
+    const ttlWarningWindowMs = 5 * 60 * 1000; // 5 minutes before expiration
+
+    const expiredRooms = roomsManager.getRoomsExceedingLifetime(MAX_ROOM_LIFETIME_MS);
+    const warningCutoff = new Date(now - (MAX_ROOM_LIFETIME_MS - ttlWarningWindowMs));
+
+    const roomsNeedingWarning = Array.from(roomsManager.rooms.values()).filter((room) => {
+      const createdAt = new Date(room.created).getTime();
+      const expiresAt = createdAt + MAX_ROOM_LIFETIME_MS;
+      const remainingMs = expiresAt - now;
+      return remainingMs > 0 && remainingMs <= ttlWarningWindowMs;
+    });
+
+    for (const room of roomsNeedingWarning) {
+      const createdAt = new Date(room.created).getTime();
+      const expiresAt = createdAt + MAX_ROOM_LIFETIME_MS;
+      const remainingMs = Math.max(0, expiresAt - now);
+      webSocketManager.broadcastToRoom(room.id, {
+        type: WS_MESSAGE_TYPES.ROOM_TTL_WARNING,
+        data: { roomId: room.id, expiresAt, remainingMs },
+      });
+    }
+
+    if (expiredRooms.length === 0) return 0;
+
+    logger.info(`Removing ${expiredRooms.length} expired rooms (exceeded TTL)`);
+
+    for (const room of expiredRooms) {
+      try {
+        if (room.gameState?.isActive) {
+          gameManager.stopGame(room.id);
+        }
+        webSocketManager.broadcastToRoom(room.id, {
+          type: WS_MESSAGE_TYPES.ROOM_EXPIRED,
+          data: { roomId: room.id, expiredAt: now },
+        });
+        roomsManager.delete(room.id);
+      } catch (error) {
+        console.error(`Failed to cleanup expired room ${room.id}:`, error);
+      }
+    }
+
+    return expiredRooms.length;
   }
 
   get isActive(): boolean {

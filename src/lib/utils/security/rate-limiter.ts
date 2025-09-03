@@ -159,11 +159,6 @@ export class RateLimiterService {
     if (config.perUser && identifiers.userId) {
       return `${action}:user:${identifiers.userId}`;
     }
-
-    // Future extensions could add:
-    // if (config.perIP && identifiers.ipAddress) return `${action}:ip:${identifiers.ipAddress}`;
-    // if (config.perRoom && identifiers.roomId) return `${action}:room:${identifiers.roomId}`;
-
     return null;
   }
 

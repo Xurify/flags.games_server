@@ -21,3 +21,5 @@ export const REGEX_PATTERNS = {
 export const INAPPROPRIATE_WORDS = [
   'admin', 'moderator', 'bot', 'system', 'null', 'undefined'
 ] as const; 
+
+export const MAX_ROOM_LIFETIME_MS = 4 * 60 * 60 * 1000;

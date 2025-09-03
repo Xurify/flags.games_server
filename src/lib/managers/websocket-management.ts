@@ -26,6 +26,8 @@ import {
   KickedData,
   SettingsUpdatedData,
   ErrorData,
+  RoomTtlWarningData,
+  RoomExpiredData,
 } from "../schemas/websockets";
 import { safeValidate } from "../utils/validation";
 import { DEFAULT_DIFFICULTY } from "../constants/game-constants";
@@ -62,6 +64,8 @@ export interface MessageDataTypes {
   [WS_MESSAGE_TYPES.SETTINGS_UPDATED]: SettingsUpdatedData;
   [WS_MESSAGE_TYPES.ERROR]: ErrorData;
   [WS_MESSAGE_TYPES.HEARTBEAT]: {};
+  [WS_MESSAGE_TYPES.ROOM_TTL_WARNING]: RoomTtlWarningData;
+  [WS_MESSAGE_TYPES.ROOM_EXPIRED]: RoomExpiredData;
 }
 
 interface WebSocketConfig {

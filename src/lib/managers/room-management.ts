@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 import { Room, User, GameState, RoomSettings } from "../../types/entities";
 import { getDifficultySettings } from "../game-logic/main";
+import { MAX_ROOM_LIFETIME_MS } from "../constants/game-constants";
 
 class RoomManager {
   public rooms = new Map<string, Room>();
@@ -194,8 +195,16 @@ class RoomManager {
       return roomCreated < cutoffTime && room.members.length === 0;
     });
   }
+
+  getRoomsExceedingLifetime(ttlMs: number = MAX_ROOM_LIFETIME_MS): Room[] {
+    const cutoffTime = new Date(Date.now() - ttlMs);
+    return Array.from(this.rooms.values()).filter((room) => {
+      const roomCreated = new Date(room.created);
+      return roomCreated < cutoffTime;
+    });
+  }
 }
 
 export const roomsManager = new RoomManager();
 
-// TODO: Room should not last for over an hour
+// TODO: Room should not last for over 3 hours

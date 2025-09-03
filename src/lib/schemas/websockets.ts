@@ -220,6 +220,17 @@ export const ErrorDataSchema = z.object({
   details: z.any().optional(),
 });
 
+export const RoomTtlWarningDataSchema = z.object({
+  roomId: z.string(),
+  expiresAt: z.number(),
+  remainingMs: z.number(),
+});
+
+export const RoomExpiredDataSchema = z.object({
+  roomId: z.string(),
+  expiredAt: z.number(),
+});
+
 // WebSocket Message Schema with all possible types
 export const WebSocketMessageSchema = z.discriminatedUnion('type', [
   // Client-to-server messages
@@ -328,6 +339,15 @@ export const WebSocketMessageSchema = z.discriminatedUnion('type', [
     type: z.literal('HEARTBEAT'),
     data: z.record(z.string(), z.unknown()).optional(),
   }),
+
+  BaseMessageSchema.extend({
+    type: z.literal('ROOM_TTL_WARNING'),
+    data: RoomTtlWarningDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.literal('ROOM_EXPIRED'),
+    data: RoomExpiredDataSchema,
+  }),
 ]);
 
 export type CreateRoomData = z.infer<typeof CreateRoomDataSchema>;
@@ -359,3 +379,5 @@ export type GameRestartedData = z.infer<typeof GameRestartedDataSchema>;
 
 export type ErrorData = z.infer<typeof ErrorDataSchema>;
 export type WebSocketMessage = z.infer<typeof WebSocketMessageSchema>;
+export type RoomTtlWarningData = z.infer<typeof RoomTtlWarningDataSchema>;
+export type RoomExpiredData = z.infer<typeof RoomExpiredDataSchema>;
