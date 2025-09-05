@@ -66,14 +66,6 @@ class UserManager {
     return updatedUser;
   }
 
-  removeUserFromRoom(userId: string): void {
-    const user = this.getUser(userId);
-    if (user) {
-      roomsManager.removeUserFromRoom(user.roomId, userId);
-      this.updateUser(userId, { roomId: "" });
-    }
-  }
-
   getInactiveUsers(minutes: number): User[] {
     const cutoffTime = new Date(Date.now() - minutes * 60 * 1000);
     return Array.from(this.users.values()).filter((user) => {
@@ -98,12 +90,20 @@ class UserManager {
     this.userConnections.delete(userId);
   }
 
+  kickUser(userId: string): void {
+    const user = this.getUser(userId);
+    if (user) {
+      roomsManager.removeUserFromRoom(user.roomId, userId);
+      this.updateUser(userId, { roomId: "" });
+    }
+  }
+
   banUser(userId: string, reason?: string): boolean {
     const user = this.getUser(userId);
     if (!user) return false;
 
     // TODO: Store banned users
-    this.removeUserFromRoom(userId);
+    this.kickUser(userId);
     return true;
   }
 

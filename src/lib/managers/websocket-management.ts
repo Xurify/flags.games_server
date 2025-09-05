@@ -123,7 +123,7 @@ class WebSocketManager {
 
     const user = usersManager.getUser(userId);
     if (user && user.roomId) {
-      usersManager.removeUserFromRoom(userId);
+      roomsManager.removeUserFromRoom(user.roomId, userId);
     }
     usersManager.deleteUser(userId);
   }
