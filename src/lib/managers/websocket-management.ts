@@ -180,7 +180,7 @@ class WebSocketManager {
       return;
     }
 
-    const buffered = (ws as unknown as { bufferedAmount?: number }).bufferedAmount || 0;
+    const buffered = ws?.getBufferedAmount() || 0;
     if (buffered > MAX_BUFFERED_BYTES) {
       logger.warn(`Closing backpressured connection for user ${userId} (buffered=${buffered})`);
       try { ws!.close(1013, "Backpressure"); } catch { }
