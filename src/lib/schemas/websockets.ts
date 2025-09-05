@@ -17,7 +17,6 @@ const BaseMessageSchema = z.object({
 
 export const CreateRoomDataSchema = z.object({
   username: UsernameSchema,
-  //roomName: RoomNameSchema, // TODO: Might implement randomized room name in the future
   settings: RoomSettingsSchema.partial().optional(),
 });
 

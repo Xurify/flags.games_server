@@ -206,5 +206,3 @@ class RoomManager {
 }
 
 export const roomsManager = new RoomManager();
-
-// TODO: Room should not last for over 3 hours
