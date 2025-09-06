@@ -13,8 +13,8 @@ export const HARD_DIFFICULTY: Difficulty = "hard";
 export const EXPERT_DIFFICULTY: Difficulty = "expert";
 
 export const REGEX_PATTERNS = {
-  USERNAME: /^[a-zA-Z0-9\s\-_\.]+$/,
-  ROOM_NAME: /^[a-zA-Z0-9\s\-_\.!]+$/,
+  USERNAME: /^[\p{L}\p{N}\s\-_\.]+$/u,
+  ROOM_NAME: /^[a-zA-Z0-9\s\-_\.!]+$/u,
   INVITE_CODE: /^[a-zA-Z0-9\-_]+$/,
 } as const;
 
