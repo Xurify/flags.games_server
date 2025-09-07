@@ -98,7 +98,7 @@ class GameManager {
     gameState.usedCountries.add(questionData.currentCountry.code);
 
     const question: GameQuestion = {
-      questionNumber: gameState.currentQuestionIndex + 1,
+      index: gameState.currentQuestionIndex + 1,
       country: questionData.currentCountry,
       options: questionData.options,
       correctAnswer: questionData.currentCountry.code,

@@ -50,7 +50,7 @@ export const UserSchema = z.object({
 });
 
 export const GameQuestionSchema = z.object({
-  questionNumber: z.number(),
+  index: z.number(),
   country: z.object({
     name: z.string(),
     flag: z.string(),
