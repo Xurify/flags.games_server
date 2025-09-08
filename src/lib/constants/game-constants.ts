@@ -23,3 +23,5 @@ export const INAPPROPRIATE_WORDS = [
 ] as const; 
 
 export const MAX_ROOM_LIFETIME_MS = 4 * 60 * 60 * 1000;
+
+export const TIME_PER_QUESTION_ALLOWED = [10, 15, 20, 30] as const;

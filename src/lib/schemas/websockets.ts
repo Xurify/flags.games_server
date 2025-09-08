@@ -17,7 +17,7 @@ const BaseMessageSchema = z.object({
 
 export const CreateRoomDataSchema = z.object({
   username: UsernameSchema,
-  settings: RoomSettingsSchema.partial().optional(),
+  settings: RoomSettingsSchema.partial(),
 });
 
 export const JoinRoomDataSchema = z.object({
@@ -27,7 +27,7 @@ export const JoinRoomDataSchema = z.object({
 
 export const SubmitAnswerDataSchema = z.object({
   answer: AnswerSchema,
-  questionId: z.string().optional(),
+  questionId: z.string(),
 });
 
 export const UpdateSettingsDataSchema = z.object({

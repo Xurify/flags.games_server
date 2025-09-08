@@ -3,7 +3,8 @@ import {
   DIFFICULTY_LEVELS,
   REGEX_PATTERNS,
   INAPPROPRIATE_WORDS,
-  GAME_MODES
+  GAME_MODES,
+  TIME_PER_QUESTION_ALLOWED
 } from '../constants';
 import { InputSanitizer } from './security/input-sanitizer';
 
@@ -42,7 +43,6 @@ export const AnswerSchema = z.string().min(VALIDATION_LIMITS.ANSWER.MIN).max(VAL
 
 export const QuestionCountSchema = z.number().min(VALIDATION_LIMITS.QUESTION_COUNT.MIN).max(VALIDATION_LIMITS.QUESTION_COUNT.MAX);
 
-export const TIME_PER_QUESTION_ALLOWED = [10, 15, 20, 30] as const;
 export type TimePerQuestion = typeof TIME_PER_QUESTION_ALLOWED[number];
 export const TimePerQuestionSchema = z.union([
   z.literal(10),
@@ -57,7 +57,7 @@ export const RoomSettingsSchema = z.object({
   timePerQuestion: TimePerQuestionSchema,
   allowSpectators: z.boolean().optional(),
   showLeaderboard: z.boolean().optional(),
-  gameMode: GameModeSchema.optional(),
+  gameMode: GameModeSchema,
   maxRoomSize: z.number().min(2).max(5),
 }).strict();
 
