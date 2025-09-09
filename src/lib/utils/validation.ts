@@ -9,7 +9,7 @@ import {
 import { InputSanitizer } from './security/input-sanitizer';
 
 const VALIDATION_LIMITS = {
-  USERNAME: { MIN: 2, MAX: 30 },
+  USERNAME: { MIN: 3, MAX: 30 },
   ROOM_NAME: { MIN: 3, MAX: 50 },
   USER_ID: { MIN: 32, MAX: 32 },
   ANSWER: { MIN: 1, MAX: 100 },
