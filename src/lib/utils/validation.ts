@@ -49,16 +49,15 @@ export const TimePerQuestionSchema = z.union([
   z.literal(15),
   z.literal(20),
   z.literal(30),
-]);
+]).default(15);
 
 export const RoomSettingsSchema = z.object({
-  difficulty: DifficultySchema,
-  questionCount: QuestionCountSchema,
-  timePerQuestion: TimePerQuestionSchema,
+  difficulty: DifficultySchema.default('easy'),
+  questionCount: QuestionCountSchema.default(15),
+  timePerQuestion: TimePerQuestionSchema.default(15),
   allowSpectators: z.boolean().optional(),
-  showLeaderboard: z.boolean().optional(),
-  gameMode: GameModeSchema,
-  maxRoomSize: z.number().min(2).max(5),
+  gameMode: GameModeSchema.default('classic'),
+  maxRoomSize: z.number().min(2).max(5).default(2),
 }).strict();
 
 const createValidator = <T>(schema: z.ZodSchema<T>) =>

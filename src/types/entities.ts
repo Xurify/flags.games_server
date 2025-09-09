@@ -41,5 +41,6 @@ export interface WebSocketData {
   isAdmin: boolean;
   authenticated: boolean;
   ipAddress?: string;
+  closedByNewSession?: boolean;
 }
 

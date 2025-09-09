@@ -95,6 +95,14 @@ class WebSocketManager {
   }
 
   addConnection(userId: string, ws: CustomWebSocket): void {
+    const existingConnection = this.connections.get(userId);
+    if (existingConnection && existingConnection !== ws) {
+      try {
+        existingConnection.data = { ...(existingConnection.data || {}), closedByNewSession: true };
+      } catch {}
+      try { existingConnection.close(4000, "New session opened"); } catch {}
+      this.heartbeatManager.stopHeartbeat(userId);
+    }
     this.connections.set(userId, ws);
     usersManager.setUserConnection(userId, ws);
     this.heartbeatManager.startHeartbeat(userId, ws);
@@ -180,7 +188,7 @@ class WebSocketManager {
       return;
     }
 
-    const buffered = ws?.getBufferedAmount() || 0;
+    const buffered = ws!.getBufferedAmount();
     if (buffered > MAX_BUFFERED_BYTES) {
       logger.warn(`Closing backpressured connection for user ${userId} (buffered=${buffered})`);
       try { ws!.close(1013, "Backpressure"); } catch { }
@@ -339,9 +347,15 @@ class WebSocketManager {
   }
 
   handleClose(ws: ServerWebSocket<WebSocketData>): void {
-    if (ws.data?.userId) {
-      this.handleUserDisconnect(ws.data.userId);
+    if (!ws.data?.userId) return;
+    if (ws.data.closedByNewSession) {
+      const current = this.getConnection(ws.data.userId);
+      if (current === ws) {
+        this.removeConnection(ws.data.userId);
+      }
+      return;
     }
+    this.handleUserDisconnect(ws.data.userId);
   }
 
   private async routeMessage(ws: ServerWebSocket<WebSocketData>, message: WebSocketMessage): Promise<void> {
@@ -629,9 +643,11 @@ class WebSocketManager {
 
     const room = roomsManager.create(roomId, updatedUser, {
       difficulty: difficulty,
-      maxRoomSize: settings?.maxRoomSize || 5,
-      timePerQuestion: settings?.timePerQuestion || 10,
+      maxRoomSize: settings.maxRoomSize,
+      timePerQuestion: settings.timePerQuestion,
       questionCount: getDifficultySettings(difficulty).count,
+      gameMode: settings?.gameMode || 'classic',
+      // allowSpectators: settings?.allowSpectators ?? true,
     });
 
     ws.data.roomId = roomId;
