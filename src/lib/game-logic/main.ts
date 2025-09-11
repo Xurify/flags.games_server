@@ -405,11 +405,11 @@ const generateDistractors = (
 
 export const generateQuestion = (
   difficulty: Difficulty,
-  usedCountries: Set<string> = new Set()
+  usedCountries: string[] = []
 ): QuestionData | null => {
   const availableCountries = getDifficultyCountries(difficulty);
   const remainingCountries = availableCountries.filter(
-    (country) => !usedCountries.has(country.code)
+    (country) => !usedCountries.includes(country.code)
   );
   if (remainingCountries.length === 0) {
     return null;

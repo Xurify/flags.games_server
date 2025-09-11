@@ -33,7 +33,7 @@ class GameManager {
       difficulty: room.settings.difficulty,
       gameStartTime: Date.now(),
       gameEndTime: null,
-      usedCountries: new Set(),
+      usedCountries: [],
       questionTimer: null,
       resultTimer: null,
       leaderboard: [],
@@ -95,7 +95,7 @@ class GameManager {
       return;
     }
 
-    gameState.usedCountries.add(questionData.currentCountry.code);
+    gameState.usedCountries.push(questionData.currentCountry.code);
 
     const question: GameQuestion = {
       index: gameState.currentQuestionIndex + 1,

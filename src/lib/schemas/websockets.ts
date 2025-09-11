@@ -93,7 +93,7 @@ export const GameStateSchema = z.object({
   difficulty: DifficultySchema,
   gameStartTime: z.number().nullable(),
   gameEndTime: z.number().nullable(),
-  usedCountries: z.set(z.string()),
+  usedCountries: z.array(z.string()),
   questionTimer: z.any().nullable(), // Timer object,
   resultTimer: z.any().nullable(), // Timer object,
   leaderboard: z.array(GameStateLeaderboardSchema),

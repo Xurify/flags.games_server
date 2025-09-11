@@ -25,7 +25,7 @@ class RoomManager {
       difficulty: settings?.difficulty,
       gameStartTime: null,
       gameEndTime: null,
-      usedCountries: new Set(),
+      usedCountries: [],
       questionTimer: null,
       resultTimer: null,
       leaderboard: [],
