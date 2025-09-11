@@ -53,12 +53,10 @@ export const GameQuestionSchema = z.object({
   index: z.number(),
   country: z.object({
     name: z.string(),
-    flag: z.string(),
     code: z.string(),
   }),
   options: z.array(z.object({
     name: z.string(),
-    flag: z.string(),
     code: z.string(),
   })),
   correctAnswer: z.string(),
@@ -96,8 +94,8 @@ export const GameStateSchema = z.object({
   gameStartTime: z.number().nullable(),
   gameEndTime: z.number().nullable(),
   usedCountries: z.set(z.string()),
-  questionTimer: z.any().nullable(), // Timer object
-  resultTimer: z.any().nullable(), // Timer object
+  questionTimer: z.any().nullable(), // Timer object,
+  resultTimer: z.any().nullable(), // Timer object,
   leaderboard: z.array(GameStateLeaderboardSchema),
 });
 
@@ -170,7 +168,6 @@ export const QuestionResultsDataSchema = z.object({
   correctAnswer: z.string(),
   correctCountry: z.object({
     name: z.string(),
-    flag: z.string(),
     code: z.string(),
   }),
   playerAnswers: z.array(z.object({
