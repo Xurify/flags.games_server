@@ -1,7 +1,7 @@
 // Comprehensive flag pattern data for similarity scoring and question generation
 export const FLAG_COLOR_PATTERNS: { [key: string]: string[] } = {
   // Basic tricolor patterns
-  redWhiteBlue: ["US", "GB", "FR", "NL", "RU", "CZ", "SK", "SI", "LU", "HR"],
+  redWhiteBlue: ["US", "GB", "FR", "NL", "RU", "PH", "CZ", "SK", "SI", "LU", "HR"],
   redWhiteGreen: ["IT", "BG", "HU", "IR", "BD", "MG"],
   blueWhiteRed: ["FR", "NL", "RU", "CZ", "SK", "SI", "LU", "HR"],
   greenWhiteRed: ["IT", "BG", "HU", "IR", "BD", "MG"],
