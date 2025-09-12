@@ -39,6 +39,19 @@ const handleApiError = (error: unknown, endpoint: string, origin: string | null 
   return ErrorHandler.createErrorResponse(appError, origin);
 };
 
+const requireAuth = (handler: (req: Request) => Promise<Response>) => {
+  return async (req: Request) => {
+    const origin = req.headers.get('origin');
+
+    const apiKey = req.headers.get('x-api-key');
+    if (!apiKey || apiKey !== env.ADMIN_API_KEY) {
+      return createJsonResponse({ error: "Unauthorized" }, 401, origin);
+    }
+
+    return handler(req);
+  };
+};
+
 const requestValidationMiddleware = RequestValidator.createMiddleware();
 
 const withMiddleware = <T extends Request = Request>(handler: (req: T) => Promise<Response>) => {
@@ -50,6 +63,12 @@ const withMiddleware = <T extends Request = Request>(handler: (req: T) => Promis
 
     return handler(req as T);
   });
+};
+
+const withAdminAuth = <T extends Request = Request>(handler: (req: Request) => Promise<Response>) => {
+  return withMiddleware<T>(
+    requireAuth(handler)
+  );
 };
 
 const server = serve({
@@ -72,11 +91,11 @@ const server = serve({
         }
       }),
     },
-    "/api/rooms": {
+    "/api/admin/rooms": {
       async OPTIONS(req) {
         return handlePreflightRequest(req);
       },
-      GET: withMiddleware(async (req) => {
+      GET: withAdminAuth(async (req) => {
         const origin = req.headers.get('origin');
         try {
           return createJsonResponse({
@@ -84,7 +103,23 @@ const server = serve({
             count: roomsManager.rooms.size,
           }, 200, origin);
         } catch (error) {
-          return handleApiError(error, "/api/rooms", origin);
+          return handleApiError(error, "/api/admin/rooms", origin);
+        }
+      }),
+    },
+    "/api/admin/users": {
+      async OPTIONS(req) {
+        return handlePreflightRequest(req);
+      },
+      GET: withAdminAuth(async (req) => {
+        const origin = req.headers.get('origin');
+        try {
+          return createJsonResponse({
+            users: Object.fromEntries(usersManager.users.entries()),
+            count: usersManager.users.size,
+          }, 200, origin);
+        } catch (error) {
+          return handleApiError(error, "/api/admin/users", origin);
         }
       }),
     },
@@ -99,23 +134,15 @@ const server = serve({
         if (!room) {
           return createJsonResponse({ error: "Room not found" }, 404, origin);
         }
-        return createJsonResponse({ data: room }, 200, origin);
-      }),
-    },
-    "/api/users": {
-      async OPTIONS(req) {
-        return handlePreflightRequest(req);
-      },
-      GET: withMiddleware(async (req) => {
-        const origin = req.headers.get('origin');
-        try {
-          return createJsonResponse({
-            users: Object.fromEntries(usersManager.users.entries()),
-            count: usersManager.users.size,
-          }, 200, origin);
-        } catch (error) {
-          return handleApiError(error, "/api/users", origin);
-        }
+        const roomInfo = {
+          id: room.id,
+          name: room.name,
+          memberCount: room.members.length,
+          maxRoomSize: room.settings.maxRoomSize,
+          isActive: room.gameState.isActive,
+          gameMode: room.settings.gameMode,
+        };
+        return createJsonResponse({ data: roomInfo }, 200, origin);
       }),
     },
     "/api/stats": {
@@ -149,7 +176,7 @@ const server = serve({
         if (!check.allowed) {
           return new Response(check.reason || "Forbidden", { status: 403 });
         }
-        
+
         const cookies = parseCookies(req.headers.get('cookie'));
         const session = cookies['session_token'];
         let userId: string | null = null;
@@ -188,7 +215,7 @@ const server = serve({
     close: (ws: ServerWebSocket<WebSocketData>) => {
       webSocketManager.handleClose(ws);
       if (ws.data?.ipAddress) {
-        try { (WebSocketSecurity as any).untrackByIp?.(ws.data.ipAddress); } catch {}
+        try { (WebSocketSecurity as any).untrackByIp?.(ws.data.ipAddress); } catch { }
       }
     },
     perMessageDeflate: false,
@@ -210,4 +237,4 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
-logger.info(`🚩 flags.games WebSocket server running on ${server.url}`); 
+logger.info(`🚩 flags.games WebSocket server running on ${server.url}`);
