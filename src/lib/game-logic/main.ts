@@ -453,9 +453,6 @@ const getPoolSimilarityBonus = (
   Object.entries(pools).forEach(([poolName, countries]) => {
     if (countries.includes(correctCode) && countries.includes(candidateCode)) {
       switch (poolName) {
-        case "confusingFlags":
-          bonus += 120;
-          break;
         case "confusingNames":
           bonus += 110;
           break;

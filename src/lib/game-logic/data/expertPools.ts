@@ -1,13 +1,4 @@
 export const EXPERT_COUNTRY_POOLS: { [key: string]: string[] } = {
-    // Countries with very similar flags (high confusion)
-    confusingFlags: [
-      "NL", "LU", "RU", "SI", "SK", "CZ", "FR", // Similar tricolors
-      "ID", "MC", "PL", // Red-white patterns
-      "TD", "RO", "AD", // Blue-yellow-red
-      "SE", "NO", "DK", "FI", "IS", // Nordic crosses
-      "HR", "RS", "BA", "ME", "MK", "XK", // Balkan similarities
-    ],
-    
     // Countries with confusing names
     confusingNames: [
       "GN", "GW", "GQ", // Guinea variants

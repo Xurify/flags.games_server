@@ -146,8 +146,10 @@ export const SUB_REGIONS: { [key: string]: string[] } = {
 
 export const SIMILAR_FLAGS: { [key: string]: string[] } = {
   // Nearly identical flags
-  RO: ["TD"], // Romania and Chad - almost identical blue-yellow-red vertical stripes
-  TD: ["RO"],
+  RO: ["TD", "AD", "MD"], // Romania, Chad, and Moldova - almost identical blue-yellow-red vertical stripes
+  MD: ["AD", "RO", "TD"],
+  TD: ["RO", "AD", "MD"],
+  AD: ["MD", "RO", "TD"],
   
   ID: ["MC", "PL"], // Red-white horizontal stripes
   MC: ["ID", "PL", "SG"], // Monaco and Indonesia are identical, Poland is inverted
@@ -270,8 +272,6 @@ export const SIMILAR_FLAGS: { [key: string]: string[] } = {
   // Other strong similarities
   QA: ["BH"], // Qatar and Bahrain - maroon/red and white with serrated edge
   BH: ["QA"],
-  MD: ["AD"], // Moldova and Andorra - nearly identical tricolors with emblems
-  AD: ["MD"],
   VU: ["ZA"], // Vanuatu and South Africa - both have a 'Y' shape
   ZA: ["VU"],
   VA: ["BN"], // Vatican City and Brunei - yellow and white themes with complex emblems
