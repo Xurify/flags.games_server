@@ -205,6 +205,71 @@ export const countries: Country[] = [
   { name: "Kosovo", code: "XK", continent: "Europe", region: "Europe" },
 ];
 
-export const getCountryByCode = (code: string) => {
-  return countries.find((country) => country.code === code);
+export const additionalCountries: Country[] = [
+  { name: "Hong Kong", code: "HK", continent: "Asia", region: "Asia" },
+  { name: "Macau", code: "MO", continent: "Asia", region: "Asia" },
+  { name: "Greenland", code: "GL", continent: "North America", region: "Americas" },
+  { name: "Faroe Islands", code: "FO", continent: "Europe", region: "Europe" },
+  { name: "Åland Islands", code: "AX", continent: "Europe", region: "Europe" },
+  { name: "Gibraltar", code: "GI", continent: "Europe", region: "Europe" },
+  { name: "Bermuda", code: "BM", continent: "North America", region: "Americas" },
+  { name: "Cayman Islands", code: "KY", continent: "North America", region: "Americas" },
+  { name: "British Virgin Islands", code: "VG", continent: "North America", region: "Americas" },
+  { name: "U.S. Virgin Islands", code: "VI", continent: "North America", region: "Americas" },
+  { name: "Puerto Rico", code: "PR", continent: "North America", region: "Americas" },
+  { name: "Guam", code: "GU", continent: "Oceania", region: "Oceania" },
+  { name: "Northern Mariana Islands", code: "MP", continent: "Oceania", region: "Oceania" },
+  { name: "American Samoa", code: "AS", continent: "Oceania", region: "Oceania" },
+  { name: "Cook Islands", code: "CK", continent: "Oceania", region: "Oceania" },
+  { name: "Niue", code: "NU", continent: "Oceania", region: "Oceania" },
+  { name: "Tokelau", code: "TK", continent: "Oceania", region: "Oceania" },
+  { name: "Wallis and Futuna", code: "WF", continent: "Oceania", region: "Oceania" },
+  { name: "French Polynesia", code: "PF", continent: "Oceania", region: "Oceania" },
+  { name: "New Caledonia", code: "NC", continent: "Oceania", region: "Oceania" },
+  { name: "Réunion", code: "RE", continent: "Africa", region: "Africa" },
+  { name: "Mayotte", code: "YT", continent: "Africa", region: "Africa" },
+  { name: "Martinique", code: "MQ", continent: "North America", region: "Americas" },
+  { name: "Guadeloupe", code: "GP", continent: "North America", region: "Americas" },
+  { name: "French Guiana", code: "GF", continent: "South America", region: "Americas" },
+  { name: "Saint Pierre and Miquelon", code: "PM", continent: "North America", region: "Americas" },
+  { name: "Saint Barthélemy", code: "BL", continent: "North America", region: "Americas" },
+  { name: "Saint Martin", code: "MF", continent: "North America", region: "Americas" },
+  { name: "Sint Maarten", code: "SX", continent: "North America", region: "Americas" },
+  { name: "Curaçao", code: "CW", continent: "North America", region: "Americas" },
+  { name: "Aruba", code: "AW", continent: "North America", region: "Americas" },
+  { name: "Bonaire", code: "BQ", continent: "North America", region: "Americas" },
+  { name: "Montserrat", code: "MS", continent: "North America", region: "Americas" },
+  { name: "Anguilla", code: "AI", continent: "North America", region: "Americas" },
+  { name: "Turks and Caicos", code: "TC", continent: "North America", region: "Americas" },
+  { name: "Falkland Islands", code: "FK", continent: "South America", region: "Americas" },
+  { name: "South Georgia and South Sandwich Islands", code: "GS", continent: "Antarctica", region: "Antarctica" },
+  { name: "Bouvet Island", code: "BV", continent: "Antarctica", region: "Antarctica" },
+  { name: "Svalbard and Jan Mayen", code: "SJ", continent: "Europe", region: "Europe" },
+  { name: "Heard Island and McDonald Islands", code: "HM", continent: "Antarctica", region: "Antarctica" },
+  { name: "Christmas Island", code: "CX", continent: "Asia", region: "Asia" },
+  { name: "Cocos Islands", code: "CC", continent: "Asia", region: "Asia" },
+  { name: "Norfolk Island", code: "NF", continent: "Oceania", region: "Oceania" },
+  { name: "Pitcairn Islands", code: "PN", continent: "Oceania", region: "Oceania" },
+  { name: "Antarctica", code: "AQ", continent: "Antarctica", region: "Antarctica" },
+
+  // UK constituent countries
+  { name: "England", code: "GB-ENG", continent: "Europe", region: "Europe" },
+  { name: "Scotland", code: "GB-SCT", continent: "Europe", region: "Europe" },
+  { name: "Wales", code: "GB-WLS", continent: "Europe", region: "Europe" },
+
+  // Crown dependencies
+  { name: "Jersey", code: "JE", continent: "Europe", region: "Europe" },
+  { name: "Guernsey", code: "GG", continent: "Europe", region: "Europe" },
+  { name: "Isle of Man", code: "IM", continent: "Europe", region: "Europe" },
+
+  // Other territories
+  { name: "Saint Helena", code: "SH", continent: "Africa", region: "Africa" },
+  { name: "Ascension Island", code: "AC", continent: "Africa", region: "Africa" },
+  { name: "Tristan da Cunha", code: "TA", continent: "Africa", region: "Africa" },
+];
+
+export const getCountryByCode = (code: string, _countries: Country[] = countries) => {
+  return _countries.find((country) => country.code === code);
 };
+
+export const countriesWithAdditional = [...countries, ...additionalCountries];
