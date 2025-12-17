@@ -1,9 +1,12 @@
 interface SecurityConfig {
-  ALLOWED_ORIGINS: string[];
+  ALLOWED_ORIGINS: {
+    development: string[];
+    production: string[];
+    staging: string[];
+  };
   RATE_LIMITS: RateLimits;
   CORS: CorsConfig;
 }
-
 
 interface RateLimits {
   MAX_CONNECTIONS_PER_IP: number;
@@ -29,7 +32,11 @@ interface CorsConfig {
 }
 
 export const SECURITY_CONFIG: SecurityConfig = {
-  ALLOWED_ORIGINS: ["http://localhost:3000", "http://localhost:3001", "https://flags.games", "https://www.flags.games"],
+  ALLOWED_ORIGINS: {
+    development: ["http://localhost:3000", "http://localhost:3001"],
+    production: ["https://flags.games", "https://www.flags.games"],
+    staging: ["https://staging.flags.games"],
+  },
 
   RATE_LIMITS: {
     MAX_CONNECTIONS_PER_IP: 5,

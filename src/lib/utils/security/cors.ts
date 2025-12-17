@@ -1,14 +1,15 @@
 import { SECURITY_CONFIG } from './config';
 import { isOriginAllowed } from './network';
 import { logger } from '../logger';
+import { env } from '../env';
 
 export const getCorsHeaders = (origin: string | null): Record<string, string> => {
   let allowedOrigin = "https://flags.games";
 
   if (origin && isOriginAllowed(origin)) {
     allowedOrigin = origin;
-  } else if (!origin && SECURITY_CONFIG.ALLOWED_ORIGINS.length > 0) {
-    allowedOrigin = SECURITY_CONFIG.ALLOWED_ORIGINS[0];
+  } else if (!origin && SECURITY_CONFIG.ALLOWED_ORIGINS[env.NODE_ENV].length > 0) {
+    allowedOrigin = SECURITY_CONFIG.ALLOWED_ORIGINS[env.NODE_ENV][0];
   }
 
   return {

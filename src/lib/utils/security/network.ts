@@ -1,9 +1,10 @@
 import { SECURITY_CONFIG } from "./config";
-import { isDevelopment } from "../env";
+import { env, isDevelopment, EnvSchema } from "../env";
 
 export const isOriginAllowed = (origin: string | null): boolean => {
     if (!origin) return isDevelopment ? true : false;
-    return SECURITY_CONFIG.ALLOWED_ORIGINS.includes(origin);
+    const nodeEnv = env.NODE_ENV;
+    return SECURITY_CONFIG.ALLOWED_ORIGINS[nodeEnv].includes(origin);
 };
 
 export const getClientIPAddress = (request: Request): string => {

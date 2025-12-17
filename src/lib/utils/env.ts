@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-const EnvSchema = z.object({
+export const EnvSchema = z.object({
   PORT: z.coerce.number().default(3001),
-  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'staging']).default('development'),
   ADMIN_API_KEY: z.string().optional(),
 });
 
@@ -14,4 +14,4 @@ export const env = EnvSchema.parse({
 
 export const isDevelopment = env.NODE_ENV === 'development';
 export const isProduction = env.NODE_ENV === 'production';
-export const isTest = env.NODE_ENV === 'test';
+export const isStaging = env.NODE_ENV === 'staging';
