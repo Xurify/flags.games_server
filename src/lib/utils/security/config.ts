@@ -34,7 +34,7 @@ interface CorsConfig {
 export const SECURITY_CONFIG: SecurityConfig = {
   ALLOWED_ORIGINS: {
     development: ["http://localhost:3000", "http://localhost:3001"],
-    production: ["https://flags.games", "https://www.flags.games"],
+    production: ["https://flags.games"],
     staging: ["https://staging.flags.games"],
   },
 
