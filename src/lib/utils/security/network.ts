@@ -2,7 +2,7 @@ import { SECURITY_CONFIG } from "./config";
 import { isDevelopment } from "../env";
 
 export const isOriginAllowed = (origin: string | null): boolean => {
-    if (!origin) return isDevelopment;
+    if (!origin) return isDevelopment ? true : false;
     return SECURITY_CONFIG.ALLOWED_ORIGINS.includes(origin);
 };
 
