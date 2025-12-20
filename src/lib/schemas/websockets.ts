@@ -106,7 +106,7 @@ export const RoomSchema = z.object({
   inviteCode: InviteCodeSchema,
   gameState: GameStateSchema,
   members: z.array(UserSchema),
-  created: z.string(),
+  createdAt: z.string(),
   settings: RoomSettingsSchema,
 });
 

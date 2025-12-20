@@ -115,7 +115,7 @@ class CleanupService {
     
     for (const user of inactiveUsers) {
       if (user.roomId) {
-        usersManager.removeUserFromRoom(user.id);
+        roomsManager.removeUserFromRoom(user.roomId, user.id);
       }
       usersManager.deleteUser(user.id);
     }
@@ -154,14 +154,14 @@ class CleanupService {
     const warningCutoff = new Date(now - (MAX_ROOM_LIFETIME_MS - ttlWarningWindowMs));
 
     const roomsNeedingWarning = Array.from(roomsManager.rooms.values()).filter((room) => {
-      const createdAt = new Date(room.created).getTime();
+      const createdAt = new Date(room.createdAt).getTime();
       const expiresAt = createdAt + MAX_ROOM_LIFETIME_MS;
       const remainingMs = expiresAt - now;
       return remainingMs > 0 && remainingMs <= ttlWarningWindowMs;
     });
 
     for (const room of roomsNeedingWarning) {
-      const createdAt = new Date(room.created).getTime();
+      const createdAt = new Date(room.createdAt).getTime();
       const expiresAt = createdAt + MAX_ROOM_LIFETIME_MS;
       const remainingMs = Math.max(0, expiresAt - now);
       webSocketManager.broadcastToRoom(room.id, {

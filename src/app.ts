@@ -141,6 +141,8 @@ const server = serve({
           maxRoomSize: room.settings.maxRoomSize,
           isActive: room.gameState.isActive,
           gameMode: room.settings.gameMode,
+          inviteCode: room.inviteCode,
+          createdAt: room.createdAt,
         };
         return createJsonResponse({ data: roomInfo }, 200, origin);
       }),

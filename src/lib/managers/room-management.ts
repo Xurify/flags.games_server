@@ -38,7 +38,7 @@ class RoomManager {
       inviteCode: nanoid(6).toUpperCase(),
       gameState,
       members: [host],
-      created: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       settings: {
         ...{
           questionCount: difficultySettings.count,
@@ -190,7 +190,7 @@ class RoomManager {
   getRoomsOlderThan(minutes: number): Room[] {
     const cutoffTime = new Date(Date.now() - minutes * 60 * 1000);
     return Array.from(this.rooms.values()).filter((room) => {
-      const roomCreated = new Date(room.created);
+      const roomCreated = new Date(room.createdAt);
       return roomCreated < cutoffTime && room.members.length === 0;
     });
   }
@@ -198,7 +198,7 @@ class RoomManager {
   getRoomsExceedingLifetime(ttlMs: number = MAX_ROOM_LIFETIME_MS): Room[] {
     const cutoffTime = new Date(Date.now() - ttlMs);
     return Array.from(this.rooms.values()).filter((room) => {
-      const roomCreated = new Date(room.created);
+      const roomCreated = new Date(room.createdAt);
       return roomCreated < cutoffTime;
     });
   }
