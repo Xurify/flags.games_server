@@ -182,7 +182,7 @@ export class ErrorHandler {
       statusCode: error.statusCode,
       details: error.details,
       requestId: error.requestId,
-      stack: error.stack
+      //stack: error.stack
     };
 
     if (error.statusCode >= 500) {
