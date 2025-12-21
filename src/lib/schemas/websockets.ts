@@ -147,6 +147,7 @@ export const KickedDataSchema = z.object({
 
 export const GameStartingDataSchema = z.object({
   countdown: z.number(),
+  startTime: z.number().optional(),
 });
 
 export const NewQuestionDataSchema = z.object({
@@ -183,6 +184,11 @@ export const QuestionResultsDataSchema = z.object({
     username: UsernameSchema,
     score: z.number(),
   })),
+  timer: z.object({
+    startTime: z.number(),
+    duration: z.number(),
+    endTime: z.number(),
+  }),
 });
 
 export const GameEndedDataSchema = z.object({

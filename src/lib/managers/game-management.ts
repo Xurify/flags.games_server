@@ -62,7 +62,10 @@ class GameManager {
 
     this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.GAME_STARTING,
-      data: { countdown: 5 },
+      data: {
+        countdown: 5,
+        startTime: Date.now(),
+      },
     });
 
     setTimeout(() => {
@@ -201,22 +204,33 @@ class GameManager {
 
     this.clearTimers(roomId);
 
+    const resultDurationSec = 3;
+    const startTime = Date.now();
+    const resultTimer = {
+      startTime,
+      duration: resultDurationSec,
+      endTime: startTime + resultDurationSec * 1000,
+    };
+
     const cachedLeaderboard = this.computeLeaderboardFromHistory(room);
-    roomsManager.updateGameState(roomId, {
+    const updatedRoom = roomsManager.updateGameState(roomId, {
       phase: "results",
       leaderboard: cachedLeaderboard,
+      resultTimer,
     });
 
-    const resultsData = this.generateResultsData(room, cachedLeaderboard);
+    if (updatedRoom) {
+      const resultsData = this.generateResultsData(updatedRoom, cachedLeaderboard);
 
-    this.broadcastToRoom(roomId, {
-      type: WS_MESSAGE_TYPES.QUESTION_RESULTS,
-      data: resultsData,
-    });
+      this.broadcastToRoom(roomId, {
+        type: WS_MESSAGE_TYPES.QUESTION_RESULTS,
+        data: resultsData,
+      });
+    }
 
     const timer = setTimeout(() => {
       this.nextQuestion(roomId);
-    }, 3000);
+    }, resultDurationSec * 1000);
 
     this.resultTimers.set(roomId, timer);
   }
@@ -266,6 +280,7 @@ class GameManager {
       correctCountry: question.country,
       playerAnswers: answers,
       leaderboard,
+      timer: room.gameState.resultTimer!,
     };
   }
 
@@ -325,8 +340,6 @@ class GameManager {
       duration: gameState.gameEndTime! - gameState.gameStartTime!,
     };
   }
-
-
 
   private clearTimers(roomId: string): void {
     const questionTimer = this.questionTimers.get(roomId);
