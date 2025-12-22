@@ -546,6 +546,12 @@ class WebSocketManager {
       return;
     }
 
+    if (!room.settings.allowJoinAfterGameStart && !['waiting', 'starting'].includes(room.gameState.phase)) {
+      const error = ErrorHandler.createRoomError("Joining not allowed: Game is in progress", ErrorCode.SESSION_ALREADY_STARTED);
+      ErrorHandler.handleWebSocketError(ws, error, "join_room");
+      return;
+    }
+
     if (room.kickedUsers.includes(userId)) {
       const error = ErrorHandler.createRoomError("You have been kicked from this room", ErrorCode.KICKED_FROM_ROOM);
       ErrorHandler.handleWebSocketError(ws, error, "join_room");
@@ -653,6 +659,7 @@ class WebSocketManager {
       timePerQuestion: settings.timePerQuestion,
       questionCount: getDifficultySettings(difficulty).count,
       gameMode: settings?.gameMode || 'classic',
+      allowJoinAfterGameStart: settings?.allowJoinAfterGameStart ?? false,
       // allowSpectators: settings?.allowSpectators ?? true,
     });
 

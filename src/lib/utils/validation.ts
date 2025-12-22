@@ -56,6 +56,7 @@ export const RoomSettingsSchema = z.object({
   questionCount: QuestionCountSchema.default(15),
   timePerQuestion: TimePerQuestionSchema.default(15),
   allowSpectators: z.boolean().optional(),
+  allowJoinAfterGameStart: z.boolean().default(false),
   gameMode: GameModeSchema.default('classic'),
   maxRoomSize: z.number().min(2).max(5).default(2),
 }).strict();
