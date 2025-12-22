@@ -1,19 +1,18 @@
-import { BunRequest, serve } from "bun";
+import { BunRequest, ServerWebSocket, serve } from "bun";
 import { roomsManager } from "./lib/managers/room-management";
 import { usersManager } from "./lib/managers/user-management";
 import { gameManager } from "./lib/managers/game-management";
-import { cleanupService } from "./lib/utils/cleanup";
 import { webSocketManager } from "./lib/managers/websocket-management";
+import { cleanupService } from "./lib/utils/cleanup";
+import { ErrorHandler, AppError, ErrorCode } from "./lib/utils/error-handler";
 import { getCorsHeaders, handlePreflightRequest } from "./lib/utils/security/cors";
 import { RequestValidator } from "./lib/utils/security/request-validator";
-import { ErrorHandler, AppError, ErrorCode } from "./lib/utils/error-handler";
 import { logger } from "./lib/utils/logger";
-import { ServerWebSocket } from "bun";
 import { env, isDevelopment } from "./lib/utils/env";
-import { WebSocketData } from "./types/entities";
 import { WebSocketSecurity } from "./lib/utils/security/websocket";
 import { getClientIPAddress } from "./lib/utils/security/network";
 import { parseCookies } from "./lib/utils/security/cookies";
+import { WebSocketData } from "./types/entities";
 
 const createJsonResponse = (data: unknown, status = 200, origin: string | null = null) =>
   new Response(JSON.stringify(data), {
