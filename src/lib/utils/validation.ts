@@ -11,7 +11,7 @@ import { InputSanitizer } from './security/input-sanitizer';
 const VALIDATION_LIMITS = {
   USERNAME: { MIN: 3, MAX: 30 },
   ROOM_NAME: { MIN: 3, MAX: 50 },
-  USER_ID: { MIN: 32, MAX: 32 },
+  USER_ID: { MIN: 36, MAX: 36 },
   ANSWER: { MIN: 1, MAX: 100 },
   INVITE_CODE_LENGTH: 6,
   QUESTION_COUNT: { MIN: 15, MAX: 197 },
