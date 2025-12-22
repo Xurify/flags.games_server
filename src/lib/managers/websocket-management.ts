@@ -205,7 +205,7 @@ class WebSocketManager {
   }
 
   handleOpen(ws: ServerWebSocket<WebSocketData>): void {
-    logger.info("WebSocket connection opened");
+    logger.info(`WebSocket connection opened - User: ${ws.data?.userId}`);
 
     ws.data = {
       userId: ws.data?.userId ?? null,
