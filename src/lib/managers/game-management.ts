@@ -50,13 +50,13 @@ class GameManager {
     });
   }
 
-  async startGame(roomId: string, userId: string): Promise<boolean> {
+  async startGame(roomId: string, userId: string): Promise<{ success: boolean; error?: string }> {
     const room = roomsManager.getRoom(roomId);
-    if (!room) return false;
+    if (!room) return { success: false, error: "Room not found" };
 
-    if (room.host !== userId) return false;
-    if (room.gameState.isActive) return false;
-    if (room.members.length < 2) return false;
+    if (room.host !== userId) return { success: false, error: "Only the host can start the game" };
+    if (room.gameState.isActive) return { success: false, error: "Game is already in progress" };
+    if (room.members.length < 2) return { success: false, error: "At least 2 players are required to start the game" };
 
     this.resetGameState(roomId);
 
@@ -72,7 +72,7 @@ class GameManager {
       this.nextQuestion(roomId);
     }, 5000);
 
-    return true;
+    return { success: true };
   }
 
   async nextQuestion(roomId: string): Promise<void> {
@@ -362,14 +362,16 @@ class GameManager {
       .map((room) => room.id);
   }
 
-  async restartGame(roomId: string, userId: string): Promise<boolean> {
+  async restartGame(roomId: string, userId: string): Promise<{ success: boolean; error?: string }> {
     const room = roomsManager.getRoom(roomId);
-    if (!room) return false;
+    if (!room) return { success: false, error: "Room not found" };
 
-    if (room.host !== userId) return false;
-    if (room.members.length < 2) return false;
+    if (room.host !== userId) return { success: false, error: "Only the host can restart the game" };
+    if (room.members.length < 2) return { success: false, error: "At least 2 players are required to restart the game" };
 
-    if (room.gameState.isActive && room.gameState.phase !== "finished") return false;
+    if (room.gameState.isActive && room.gameState.phase !== "finished") {
+      return { success: false, error: "A game is currently in progress. Stop it first to restart." };
+    }
 
     this.resetGameState(roomId);
 
@@ -382,7 +384,7 @@ class GameManager {
       this.nextQuestion(roomId);
     }, 5000);
 
-    return true;
+    return { success: true };
   }
 
   stopGame(roomId: string): boolean {

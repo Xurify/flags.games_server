@@ -411,9 +411,9 @@ class WebSocketManager {
             return;
           }
         }
-        const success = await gameManager.startGame(roomId, userId);
-        if (!success) {
-          const error = ErrorHandler.createPermissionError("Cannot start game - check permissions and player count");
+        const startResult = await gameManager.startGame(roomId, userId);
+        if (!startResult.success) {
+          const error = ErrorHandler.createPermissionError(startResult.error || "Cannot start game");
           ErrorHandler.handleWebSocketError(ws, error, "start_game");
         }
         break;
@@ -428,9 +428,9 @@ class WebSocketManager {
       case WS_MESSAGE_TYPES.RESTART_GAME:
         if (!userId || !roomId) return;
 
-        const restartSuccess = await gameManager.restartGame(roomId, userId);
-        if (!restartSuccess) {
-          const error = ErrorHandler.createPermissionError("Cannot restart game - check permissions and player count");
+        const restartResult = await gameManager.restartGame(roomId, userId);
+        if (!restartResult.success) {
+          const error = ErrorHandler.createPermissionError(restartResult.error || "Cannot restart game");
           ErrorHandler.handleWebSocketError(ws, error, "restart_game");
         }
         break;
