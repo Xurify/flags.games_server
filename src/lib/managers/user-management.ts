@@ -93,7 +93,7 @@ class UserManager {
   kickUser(userId: string): void {
     const user = this.getUser(userId);
     if (user) {
-      roomsManager.removeUserFromRoom(user.roomId, userId);
+      roomsManager.kickUserFromRoom(user.roomId, userId);
       this.updateUser(userId, { roomId: "" });
     }
   }

@@ -38,6 +38,7 @@ class RoomManager {
       inviteCode: nanoid(6).toUpperCase(),
       gameState,
       members: [host],
+      kickedUsers: [],
       createdAt: new Date().toISOString(),
       settings: {
         ...{
@@ -123,6 +124,10 @@ class RoomManager {
       return null;
     }
 
+    if (room.kickedUsers.includes(user.id)) {
+      return null;
+    }
+
     const existingUser = room.members.find((member) => member.id === user.id);
     if (existingUser) {
       return room;
@@ -141,6 +146,22 @@ class RoomManager {
     );
 
     return this.update(roomId, { members: updatedMembers });
+  }
+
+  kickUserFromRoom(roomId: string, userId: string): Room | null {
+    const room = this.get(roomId);
+    if (!room) return null;
+
+    const updatedMembers = room.members.filter(
+      (member) => member.id !== userId
+    );
+
+    const updatedKickedUsers = Array.from(new Set([...room.kickedUsers, userId]));
+
+    return this.update(roomId, {
+      members: updatedMembers,
+      kickedUsers: updatedKickedUsers,
+    });
   }
 
   setNewHost(roomId: string, newHostId: string): Room | null {

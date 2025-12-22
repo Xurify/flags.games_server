@@ -546,6 +546,12 @@ class WebSocketManager {
       return;
     }
 
+    if (room.kickedUsers.includes(userId)) {
+      const error = ErrorHandler.createRoomError("You have been kicked from this room", ErrorCode.KICKED_FROM_ROOM);
+      ErrorHandler.handleWebSocketError(ws, error, "join_room");
+      return;
+    }
+
     if (room.members.some(member => member.username === username)) {
       const error = ErrorHandler.createRoomError("Username already taken", ErrorCode.USERNAME_TAKEN);
       ErrorHandler.handleWebSocketError(ws, error, "join_room");
@@ -723,7 +729,7 @@ class WebSocketManager {
 
     const targetUser = usersManager.getUser(data.userId);
     if (targetUser) {
-      const updatedRoom = roomsManager.removeUserFromRoom(roomId, data.userId);
+      const updatedRoom = roomsManager.kickUserFromRoom(roomId, data.userId);
 
       if (updatedRoom) {
         const wasHost = room.host === data.userId;
