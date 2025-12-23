@@ -3,13 +3,7 @@ import { nanoid } from "nanoid";
 
 import { WebSocketData, CustomWebSocket } from "../../types/entities";
 import { WebSocketMessageSchema, type WebSocketMessage } from "../schemas";
-import {
-  type CreateRoomData,
-  type JoinRoomData,
-  type UpdateSettingsData,
-  type KickUserData,
-  Room,
-} from "../schemas/websockets";
+import { type CreateRoomData, type JoinRoomData, type UpdateSettingsData, type KickUserData, Room } from "../schemas/websockets";
 import {
   GameStartingData,
   NewQuestionData,
@@ -100,7 +94,9 @@ class WebSocketManager {
       try {
         existingConnection.data = { ...(existingConnection.data || {}), closedByNewSession: true };
       } catch {}
-      try { existingConnection.close(4000, "New session opened"); } catch {}
+      try {
+        existingConnection.close(4000, "New session opened");
+      } catch {}
       this.heartbeatManager.stopHeartbeat(userId);
     }
     this.connections.set(userId, ws);
@@ -137,7 +133,7 @@ class WebSocketManager {
   }
 
   private isConnectionValid(ws: CustomWebSocket | undefined): boolean {
-    return !!ws && (ws.readyState === WebSocket.OPEN);
+    return !!ws && ws.readyState === WebSocket.OPEN;
   }
 
   broadcastToRoom<T extends keyof MessageDataTypes>(
@@ -150,12 +146,12 @@ class WebSocketManager {
 
     const messageString = JSON.stringify({
       ...message,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     const excludeSet = new Set(exclude);
 
-    room.members.forEach(member => {
+    room.members.forEach((member) => {
       if (excludeSet.has(member.id)) return;
 
       const ws = this.getConnection(member.id);
@@ -165,16 +161,20 @@ class WebSocketManager {
 
   broadcastToUser(userId: string, message: WebSocketMessage): void {
     const ws = this.getConnection(userId);
-    this.safeSendToUser(userId, ws, JSON.stringify({
-      ...message,
-      timestamp: Date.now()
-    }));
+    this.safeSendToUser(
+      userId,
+      ws,
+      JSON.stringify({
+        ...message,
+        timestamp: Date.now(),
+      })
+    );
   }
 
   broadcastToAll(message: WebSocketMessage): void {
     const messageString = JSON.stringify({
       ...message,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     this.connections.forEach((ws, userId) => {
@@ -191,7 +191,9 @@ class WebSocketManager {
     const buffered = ws!.getBufferedAmount();
     if (buffered > MAX_BUFFERED_BYTES) {
       logger.warn(`Closing backpressured connection for user ${userId} (buffered=${buffered})`);
-      try { ws!.close(1013, "Backpressure"); } catch { }
+      try {
+        ws!.close(1013, "Backpressure");
+      } catch {}
       this.handleUserDisconnect(userId);
       return;
     }
@@ -217,7 +219,9 @@ class WebSocketManager {
 
     const userId = ws.data.userId;
     if (!userId) {
-      try { ws.close(4001, "Unauthorized"); } catch {}
+      try {
+        ws.close(4001, "Unauthorized");
+      } catch {}
       return;
     }
 
@@ -246,14 +250,14 @@ class WebSocketManager {
 
     if (!room) {
       const allRooms = Array.from(roomsManager.rooms.values());
-      const userAsHost = allRooms.find(room => room.host === userId);
+      const userAsHost = allRooms.find((room) => room.host === userId);
       if (userAsHost) {
         if (user && (!user.roomId || user.roomId === "")) {
           usersManager.updateUser(userId, { roomId: userAsHost.id });
           room = userAsHost;
           ws.data.roomId = userAsHost.id;
         }
-        const userInMembers = userAsHost.members.find(member => member.id === userId);
+        const userInMembers = userAsHost.members.find((member) => member.id === userId);
         if (!userInMembers && user) {
           roomsManager.addUserToRoom(userAsHost.id, user);
           room = roomsManager.getRoom(userAsHost.id) || userAsHost;
@@ -261,27 +265,29 @@ class WebSocketManager {
       }
     }
 
-    ws.send(JSON.stringify({
-      type: WS_MESSAGE_TYPES.AUTH_SUCCESS,
-      data: { userId: userId, isAdmin: ws.data.isAdmin, user, room },
-    }));
+    ws.send(
+      JSON.stringify({
+        type: WS_MESSAGE_TYPES.AUTH_SUCCESS,
+        data: { userId: userId, isAdmin: ws.data.isAdmin, user, room },
+      })
+    );
   }
 
   async handleMessage(ws: ServerWebSocket<WebSocketData>, message: string | Buffer): Promise<void> {
     try {
-      const payloadBytes = typeof message === 'string'
-        ? Buffer.byteLength(message)
-        : (message as Buffer).length;
+      const payloadBytes = typeof message === "string" ? Buffer.byteLength(message) : (message as Buffer).length;
 
       if (payloadBytes > MAX_WEBSOCKET_MESSAGE_BYTES) {
         const error = new AppError({
           code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
           message: "Message too large",
           statusCode: 413,
-          details: { size: payloadBytes, limit: MAX_WEBSOCKET_MESSAGE_BYTES }
+          details: { size: payloadBytes, limit: MAX_WEBSOCKET_MESSAGE_BYTES },
         });
         ErrorHandler.handleWebSocketError(ws, error, "message_too_large");
-        try { ws.close(1009, "Message too large"); } catch { }
+        try {
+          ws.close(1009, "Message too large");
+        } catch {}
         return;
       }
 
@@ -291,7 +297,7 @@ class WebSocketManager {
         const error = new AppError({
           code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
           message: "Empty message",
-          statusCode: 400
+          statusCode: 400,
         });
         ErrorHandler.handleWebSocketError(ws, error, "empty_message");
         return;
@@ -305,7 +311,7 @@ class WebSocketManager {
           code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
           message: "Invalid JSON format in message",
           statusCode: 400,
-          details: { reason: (jsonError instanceof Error ? jsonError.message : String(jsonError)) }
+          details: { reason: jsonError instanceof Error ? jsonError.message : String(jsonError) },
         });
         ErrorHandler.handleWebSocketError(ws, error, "json_parse_error");
         return;
@@ -340,7 +346,7 @@ class WebSocketManager {
         code: ErrorCode.WEBSOCKET_MESSAGE_ERROR,
         message: "Error processing WebSocket message",
         statusCode: 500,
-        cause: error instanceof Error ? error : new Error(String(error))
+        cause: error instanceof Error ? error : new Error(String(error)),
       });
       ErrorHandler.handleWebSocketError(ws, appError, "message_processing");
     }
@@ -371,16 +377,16 @@ class WebSocketManager {
       case WS_MESSAGE_TYPES.SUBMIT_ANSWER:
         if (!userId || !roomId) return;
         {
-          const result = rateLimiter.consume('SUBMIT_ANSWER', { userId });
+          const result = rateLimiter.consume("SUBMIT_ANSWER", { userId });
           if (!result.allowed) {
             const error = ErrorHandler.createRateLimitError(result.retryAfter, {
-              action: 'SUBMIT_ANSWER',
+              action: "SUBMIT_ANSWER",
               remaining: result.remaining,
               resetTime: result.resetTime,
               ...(result.limit !== undefined ? { limit: result.limit } : {}),
               ...(result.windowMs !== undefined ? { windowMs: result.windowMs } : {}),
             });
-            ErrorHandler.handleWebSocketError(ws, error, 'rate_limit_submit_answer');
+            ErrorHandler.handleWebSocketError(ws, error, "rate_limit_submit_answer");
             return;
           }
         }
@@ -398,16 +404,16 @@ class WebSocketManager {
       case WS_MESSAGE_TYPES.START_GAME:
         if (!userId || !roomId) return;
         {
-          const result = rateLimiter.consume('START_GAME', { userId });
+          const result = rateLimiter.consume("START_GAME", { userId });
           if (!result.allowed) {
             const error = ErrorHandler.createRateLimitError(result.retryAfter, {
-              action: 'START_GAME',
+              action: "START_GAME",
               remaining: result.remaining,
               resetTime: result.resetTime,
               ...(result.limit !== undefined ? { limit: result.limit } : {}),
               ...(result.windowMs !== undefined ? { windowMs: result.windowMs } : {}),
             });
-            ErrorHandler.handleWebSocketError(ws, error, 'rate_limit_start_game');
+            ErrorHandler.handleWebSocketError(ws, error, "rate_limit_start_game");
             return;
           }
         }
@@ -490,7 +496,7 @@ class WebSocketManager {
       }
     });
 
-    deadConnections.forEach(userId => {
+    deadConnections.forEach((userId) => {
       this.removeConnectionAndUser(userId);
     });
 
@@ -518,16 +524,16 @@ class WebSocketManager {
     }
 
     {
-      const result = rateLimiter.consume('JOIN_ROOM', { userId });
+      const result = rateLimiter.consume("JOIN_ROOM", { userId });
       if (!result.allowed) {
         const error = ErrorHandler.createRateLimitError(result.retryAfter, {
-          action: 'JOIN_ROOM',
+          action: "JOIN_ROOM",
           remaining: result.remaining,
           resetTime: result.resetTime,
           ...(result.limit !== undefined ? { limit: result.limit } : {}),
           ...(result.windowMs !== undefined ? { windowMs: result.windowMs } : {}),
         });
-        ErrorHandler.handleWebSocketError(ws, error, 'rate_limit_join_room');
+        ErrorHandler.handleWebSocketError(ws, error, "rate_limit_join_room");
         return;
       }
     }
@@ -546,7 +552,7 @@ class WebSocketManager {
       return;
     }
 
-    if (!room.settings.allowJoinAfterGameStart && !['waiting', 'starting'].includes(room.gameState.phase)) {
+    if (!room.settings.allowJoinAfterGameStart && !["waiting", "starting"].includes(room.gameState.phase)) {
       const error = ErrorHandler.createRoomError("Joining not allowed: Game is in progress", ErrorCode.SESSION_ALREADY_STARTED);
       ErrorHandler.handleWebSocketError(ws, error, "join_room");
       return;
@@ -558,7 +564,7 @@ class WebSocketManager {
       return;
     }
 
-    if (room.members.some(member => member.username === username)) {
+    if (room.members.some((member) => member.username === username)) {
       const error = ErrorHandler.createRoomError("Username already taken", ErrorCode.USERNAME_TAKEN);
       ErrorHandler.handleWebSocketError(ws, error, "join_room");
       return;
@@ -595,15 +601,21 @@ class WebSocketManager {
       return;
     }
 
-    ws.send(JSON.stringify({
-      type: WS_MESSAGE_TYPES.JOIN_ROOM_SUCCESS,
-      data: { room: updatedRoom, user: updatedUser },
-    }));
+    ws.send(
+      JSON.stringify({
+        type: WS_MESSAGE_TYPES.JOIN_ROOM_SUCCESS,
+        data: { room: updatedRoom, user: updatedUser },
+      })
+    );
 
-    this.broadcastToRoom(room.id, {
-      type: WS_MESSAGE_TYPES.USER_JOINED,
-      data: { user: updatedUser, room: updatedRoom },
-    }, [userId]);
+    this.broadcastToRoom(
+      room.id,
+      {
+        type: WS_MESSAGE_TYPES.USER_JOINED,
+        data: { user: updatedUser, room: updatedRoom },
+      },
+      [userId]
+    );
   }
 
   private handleCreateRoom(ws: ServerWebSocket<WebSocketData>, data: CreateRoomData): void {
@@ -623,16 +635,16 @@ class WebSocketManager {
     }
 
     {
-      const result = rateLimiter.consume('CREATE_ROOM', { userId });
+      const result = rateLimiter.consume("CREATE_ROOM", { userId });
       if (!result.allowed) {
         const error = ErrorHandler.createRateLimitError(result.retryAfter, {
-          action: 'CREATE_ROOM',
+          action: "CREATE_ROOM",
           remaining: result.remaining,
           resetTime: result.resetTime,
           ...(result.limit !== undefined ? { limit: result.limit } : {}),
           ...(result.windowMs !== undefined ? { windowMs: result.windowMs } : {}),
         });
-        ErrorHandler.handleWebSocketError(ws, error, 'rate_limit_create_room');
+        ErrorHandler.handleWebSocketError(ws, error, "rate_limit_create_room");
         return;
       }
     }
@@ -658,17 +670,19 @@ class WebSocketManager {
       maxRoomSize: settings.maxRoomSize,
       timePerQuestion: settings.timePerQuestion,
       questionCount: getDifficultySettings(difficulty).count,
-      gameMode: settings?.gameMode || 'classic',
+      gameMode: settings?.gameMode || "classic",
       allowJoinAfterGameStart: settings?.allowJoinAfterGameStart ?? false,
       // allowSpectators: settings?.allowSpectators ?? true,
     });
 
     ws.data.roomId = roomId;
 
-    ws.send(JSON.stringify({
-      type: WS_MESSAGE_TYPES.CREATE_ROOM_SUCCESS,
-      data: { room, user: updatedUser },
-    }));
+    ws.send(
+      JSON.stringify({
+        type: WS_MESSAGE_TYPES.CREATE_ROOM_SUCCESS,
+        data: { room, user: updatedUser },
+      })
+    );
   }
 
   private handleLeaveRoom(ws: ServerWebSocket<WebSocketData>): void {
@@ -750,10 +764,14 @@ class WebSocketManager {
           });
         }
 
-        this.broadcastToRoom(roomId, {
-          type: WS_MESSAGE_TYPES.USER_KICKED,
-          data: { userId: data.userId, room: updatedRoom },
-        }, [data.userId]);
+        this.broadcastToRoom(
+          roomId,
+          {
+            type: WS_MESSAGE_TYPES.USER_KICKED,
+            data: { userId: data.userId, room: updatedRoom },
+          },
+          [data.userId]
+        );
       }
 
       this.broadcastToUser(data.userId, {
