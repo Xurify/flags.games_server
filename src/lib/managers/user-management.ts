@@ -7,6 +7,7 @@ interface CreateUserParams {
   roomId: string;
   socketId: string;
   isAdmin?: boolean;
+  avatarId?: string;
 }
 
 class UserManager {
@@ -22,6 +23,7 @@ class UserManager {
       created: new Date().toISOString(),
       isAdmin: params.isAdmin || false,
       lastActiveTime: new Date().toISOString(),
+      avatarId: params.avatarId,
     };
 
     this.users.set(user.id, user);

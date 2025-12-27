@@ -1,14 +1,7 @@
 import { generateQuestion, getDifficultySettings } from "../game-logic/main";
 import { roomsManager } from "./room-management";
 import { usersManager } from "./user-management";
-import {
-  GameQuestion,
-  GameStateLeaderboard,
-  Room,
-  GameAnswer,
-  GameState,
-  QuestionResultsData,
-} from "../../types/entities";
+import { GameQuestion, GameStateLeaderboard, Room, GameAnswer, GameState, QuestionResultsData } from "../../types/entities";
 import { WS_MESSAGE_TYPES } from "../constants/ws-message-types";
 import { CORRECT_POINT_COST } from "../constants/game-constants";
 
@@ -45,7 +38,7 @@ class GameManager {
       members: room.members.map((member) => ({
         ...member,
         hasAnswered: false,
-        score: 0
+        score: 0,
       })),
     });
   }
@@ -88,10 +81,7 @@ class GameManager {
 
     this.clearTimers(roomId);
 
-    const questionData = generateQuestion(
-      gameState.difficulty,
-      gameState.usedCountries
-    );
+    const questionData = generateQuestion(gameState.difficulty, gameState.usedCountries);
 
     if (!questionData) {
       this.endGame(roomId);
@@ -131,20 +121,14 @@ class GameManager {
     this.questionTimers.set(roomId, timer);
   }
 
-  async submitAnswer(
-    roomId: string,
-    userId: string,
-    answer: string
-  ): Promise<void> {
+  async submitAnswer(roomId: string, userId: string, answer: string): Promise<void> {
     const room = roomsManager.getRoom(roomId);
     const user = usersManager.getUser(userId);
 
     if (!room || !user || !room.gameState.currentQuestion) return;
     if (room.gameState.phase !== "question") return;
 
-    const existingAnswer = room.gameState.answers.find(
-      (answer) => answer.userId === userId
-    );
+    const existingAnswer = room.gameState.answers.find((answer) => answer.userId === userId);
     if (existingAnswer) return;
 
     const currentTime = Date.now();
@@ -176,9 +160,7 @@ class GameManager {
       leaderboard: updatedLeaderboard,
     });
 
-    const userScore = updatedHistory
-      .filter((a) => a.userId === userId)
-      .reduce((sum, a) => sum + a.pointsAwarded, 0);
+    const userScore = updatedHistory.filter((a) => a.userId === userId).reduce((sum, a) => sum + a.pointsAwarded, 0);
 
     this.broadcastToRoom(roomId, {
       type: WS_MESSAGE_TYPES.ANSWER_SUBMITTED,
@@ -268,10 +250,7 @@ class GameManager {
     });
   }
 
-  private generateResultsData(
-    room: Room,
-    leaderboard: GameStateLeaderboard[]
-  ): QuestionResultsData {
+  private generateResultsData(room: Room, leaderboard: GameStateLeaderboard[]): QuestionResultsData {
     const question = room.gameState.currentQuestion!;
     const answers = room.gameState.answers;
 
@@ -307,11 +286,19 @@ class GameManager {
       const name = member.username;
       const userStat = stats.get(member.id);
       if (!userStat) {
-        return { userId: member.id, username: name, score: 0, correctAnswers: 0, averageTime: 0 };
+        return {
+          userId: member.id,
+          username: name,
+          avatarId: member.avatarId,
+          score: 0,
+          correctAnswers: 0,
+          averageTime: 0,
+        };
       }
       return {
         userId: member.id,
         username: name,
+        avatarId: member.avatarId,
         score: userStat.score,
         correctAnswers: userStat.correct,
         averageTime: userStat.count ? userStat.timeSum / userStat.count : 0,
@@ -334,7 +321,7 @@ class GameManager {
       averageTime:
         totalAnswers > 0
           ? gameState.answerHistory.reduce((accumulatedTimeMs, answer) => accumulatedTimeMs + answer.timeToAnswer, 0) /
-          totalAnswers
+            totalAnswers
           : 0,
       difficulty: gameState.difficulty,
       duration: gameState.gameEndTime! - gameState.gameStartTime!,

@@ -395,6 +395,9 @@ class WebSocketManager {
       case WS_MESSAGE_TYPES.UPDATE_ROOM_SETTINGS:
         this.handleUpdateRoomSettings(ws, message.data);
         break;
+      case WS_MESSAGE_TYPES.UPDATE_PROFILE:
+        this.handleUpdateProfile(ws, message.data);
+        break;
       case WS_MESSAGE_TYPES.KICK_USER:
         this.handleKickUser(ws, message.data);
         break;
@@ -579,6 +582,7 @@ class WebSocketManager {
     const updatedUser = usersManager.updateUser(userId, {
       username,
       roomId: room.id,
+      avatarId: data.avatarId,
     });
 
     if (!updatedUser) {
@@ -655,6 +659,7 @@ class WebSocketManager {
       username,
       roomId,
       isAdmin: true,
+      avatarId: data.avatarId,
     });
 
     if (!updatedUser) {
@@ -739,6 +744,33 @@ class WebSocketManager {
       type: WS_MESSAGE_TYPES.SETTINGS_UPDATED,
       data: { settings: updatedRoom?.settings || room.settings },
     });
+  }
+
+  private handleUpdateProfile(ws: ServerWebSocket<WebSocketData>, data: { avatarId?: string }): void {
+    const { userId, roomId } = ws.data;
+    if (!userId) return;
+
+    const updatedUser = usersManager.updateUser(userId, {
+      avatarId: data.avatarId,
+    });
+
+    if (!updatedUser || !roomId) return;
+
+    // Update the user in the room members as well
+    const room = roomsManager.getRoom(roomId);
+    if (room) {
+      const memberIndex = room.members.findIndex((m) => m.id === userId);
+      if (memberIndex !== -1) {
+        room.members[memberIndex] = { ...room.members[memberIndex], avatarId: data.avatarId };
+        roomsManager.update(roomId, { members: room.members });
+      }
+
+      // Broadcast to room that user profile was updated
+      this.broadcastToRoom(roomId, {
+        type: WS_MESSAGE_TYPES.PROFILE_UPDATED,
+        data: { user: updatedUser },
+      });
+    }
   }
 
   private handleKickUser(ws: ServerWebSocket<WebSocketData>, data: KickUserData): void {

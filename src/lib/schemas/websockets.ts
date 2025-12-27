@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 import {
   UsernameSchema,
   UserIdSchema,
@@ -7,7 +7,7 @@ import {
   InviteCodeSchema,
   RoomSettingsSchema,
   DifficultySchema,
-} from '../utils/validation';
+} from "../utils/validation";
 
 const BaseMessageSchema = z.object({
   type: z.string(),
@@ -18,11 +18,13 @@ const BaseMessageSchema = z.object({
 export const CreateRoomDataSchema = z.object({
   username: UsernameSchema,
   settings: RoomSettingsSchema,
+  avatarId: z.string().optional(),
 });
 
 export const JoinRoomDataSchema = z.object({
   inviteCode: InviteCodeSchema,
   username: UsernameSchema,
+  avatarId: z.string().optional(),
 });
 
 export const SubmitAnswerDataSchema = z.object({
@@ -38,6 +40,9 @@ export const KickUserDataSchema = z.object({
   userId: UserIdSchema,
 });
 
+export const UpdateProfileDataSchema = z.object({
+  avatarId: z.string().optional(),
+});
 
 export const UserSchema = z.object({
   id: UserIdSchema,
@@ -47,6 +52,7 @@ export const UserSchema = z.object({
   created: z.string(),
   isAdmin: z.boolean(),
   lastActiveTime: z.string(),
+  avatarId: z.string().optional(),
 });
 
 export const GameQuestionSchema = z.object({
@@ -55,10 +61,12 @@ export const GameQuestionSchema = z.object({
     name: z.string(),
     code: z.string(),
   }),
-  options: z.array(z.object({
-    name: z.string(),
-    code: z.string(),
-  })),
+  options: z.array(
+    z.object({
+      name: z.string(),
+      code: z.string(),
+    })
+  ),
   correctAnswer: z.string(),
   startTime: z.number(),
   endTime: z.number(),
@@ -80,6 +88,7 @@ export const GameStateLeaderboardSchema = z.object({
   score: z.number(),
   correctAnswers: z.number(),
   averageTime: z.number(),
+  avatarId: z.string().optional(),
 });
 
 export const GameStateSchema = z.object({
@@ -164,6 +173,7 @@ export const AnswerSubmittedDataSchema = z.object({
   totalPlayers: z.number(),
   pointsAwarded: z.number(),
   score: z.number(),
+  avatarId: z.string().optional(),
 });
 
 export const QuestionResultsDataSchema = z.object({
@@ -172,19 +182,23 @@ export const QuestionResultsDataSchema = z.object({
     name: z.string(),
     code: z.string(),
   }),
-  playerAnswers: z.array(z.object({
-    userId: UserIdSchema,
-    username: UsernameSchema,
-    answer: AnswerSchema,
-    isCorrect: z.boolean(),
-    timeToAnswer: z.number(),
-    pointsAwarded: z.number(),
-  })),
-  leaderboard: z.array(z.object({
-    userId: UserIdSchema,
-    username: UsernameSchema,
-    score: z.number(),
-  })),
+  playerAnswers: z.array(
+    z.object({
+      userId: UserIdSchema,
+      username: UsernameSchema,
+      answer: AnswerSchema,
+      isCorrect: z.boolean(),
+      timeToAnswer: z.number(),
+      pointsAwarded: z.number(),
+    })
+  ),
+  leaderboard: z.array(
+    z.object({
+      userId: UserIdSchema,
+      username: UsernameSchema,
+      score: z.number(),
+    })
+  ),
   timer: z.object({
     startTime: z.number(),
     duration: z.number(),
@@ -235,120 +249,118 @@ export const RoomExpiredDataSchema = z.object({
 });
 
 // WebSocket Message Schema with all possible types
-export const WebSocketMessageSchema = z.discriminatedUnion('type', [
+export const WebSocketMessageSchema = z.discriminatedUnion("type", [
   // Client-to-server messages
   BaseMessageSchema.extend({
-    type: z.literal('CREATE_ROOM'),
+    type: z.literal("CREATE_ROOM"),
     data: CreateRoomDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('JOIN_ROOM'),
+    type: z.literal("JOIN_ROOM"),
     data: JoinRoomDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('SUBMIT_ANSWER'),
+    type: z.literal("SUBMIT_ANSWER"),
     data: SubmitAnswerDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('UPDATE_ROOM_SETTINGS'),
+    type: z.literal("UPDATE_ROOM_SETTINGS"),
     data: UpdateSettingsDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('KICK_USER'),
+    type: z.literal("KICK_USER"),
     data: KickUserDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.enum([
-      'LEAVE_ROOM',
-      'START_GAME',
-      'STOP_GAME',
-      'RESTART_GAME',
-      'HEARTBEAT_RESPONSE'
-    ]),
+    type: z.literal("UPDATE_PROFILE"),
+    data: UpdateProfileDataSchema,
+  }),
+  BaseMessageSchema.extend({
+    type: z.enum(["LEAVE_ROOM", "START_GAME", "STOP_GAME", "RESTART_GAME", "HEARTBEAT_RESPONSE"]),
     data: z.record(z.string(), z.unknown()).optional(),
   }),
-  
+
   // Server-to-client messages
   BaseMessageSchema.extend({
-    type: z.literal('AUTH_SUCCESS'),
+    type: z.literal("AUTH_SUCCESS"),
     data: AuthSuccessDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('CREATE_ROOM_SUCCESS'),
+    type: z.literal("CREATE_ROOM_SUCCESS"),
     data: RoomSuccessDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('JOIN_ROOM_SUCCESS'),
+    type: z.literal("JOIN_ROOM_SUCCESS"),
     data: RoomSuccessDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('USER_JOINED'),
+    type: z.literal("USER_JOINED"),
     data: UserJoinedDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('USER_LEFT'),
+    type: z.literal("USER_LEFT"),
     data: UserLeftDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('USER_KICKED'),
+    type: z.literal("USER_KICKED"),
     data: UserKickedDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('HOST_CHANGED'),
+    type: z.literal("HOST_CHANGED"),
     data: HostChangedDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('KICKED'),
+    type: z.literal("KICKED"),
     data: KickedDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('GAME_STARTING'),
+    type: z.literal("GAME_STARTING"),
     data: GameStartingDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('NEW_QUESTION'),
+    type: z.literal("NEW_QUESTION"),
     data: NewQuestionDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('ANSWER_SUBMITTED'),
+    type: z.literal("ANSWER_SUBMITTED"),
     data: AnswerSubmittedDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('QUESTION_RESULTS'),
+    type: z.literal("QUESTION_RESULTS"),
     data: QuestionResultsDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('GAME_ENDED'),
+    type: z.literal("GAME_ENDED"),
     data: GameEndedDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('SETTINGS_UPDATED'),
+    type: z.literal("SETTINGS_UPDATED"),
     data: SettingsUpdatedDataSchema,
   }),
 
   BaseMessageSchema.extend({
-    type: z.literal('ERROR'),
+    type: z.literal("ERROR"),
     data: ErrorDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('GAME_STOPPED'),
+    type: z.literal("GAME_STOPPED"),
     data: GameStoppedDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('GAME_RESTARTED'),
+    type: z.literal("GAME_RESTARTED"),
     data: GameRestartedDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('HEARTBEAT'),
+    type: z.literal("HEARTBEAT"),
     data: z.record(z.string(), z.unknown()).optional(),
   }),
 
   BaseMessageSchema.extend({
-    type: z.literal('ROOM_TTL_WARNING'),
+    type: z.literal("ROOM_TTL_WARNING"),
     data: RoomTtlWarningDataSchema,
   }),
   BaseMessageSchema.extend({
-    type: z.literal('ROOM_EXPIRED'),
+    type: z.literal("ROOM_EXPIRED"),
     data: RoomExpiredDataSchema,
   }),
 ]);
